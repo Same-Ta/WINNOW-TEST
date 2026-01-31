@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus, Users, FileText, ChevronRight, X } from 'lucide-react';
 import { MOCK_JOBS } from '@/constants/mockData';
 import { Badge } from '@/components/common/Badge';

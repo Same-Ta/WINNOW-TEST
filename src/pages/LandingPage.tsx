@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { FONTS } from '@/constants/fonts';
 import { FunnelCSS } from '@/components/common/FunnelCSS';

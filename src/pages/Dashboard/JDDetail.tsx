@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const JDDetail = () => (
     <div className="flex flex-col lg:flex-row gap-8 h-full max-w-[1200px] mx-auto pb-10">
         {/* Left Info Panel */}

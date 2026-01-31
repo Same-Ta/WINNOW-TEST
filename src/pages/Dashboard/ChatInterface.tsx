@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight, MessageSquare, X, FileText } from 'lucide-react';
 
 export const ChatInterface = () => (

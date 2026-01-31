@@ -1,4 +1,3 @@
-import React from 'react';
 import { Filter, Download, MoreHorizontal } from 'lucide-react';
 import { MOCK_APPLICANTS } from '@/constants/mockData';
 

@@ -1,7 +1,5 @@
-import React from 'react';
-import { MOCK_JOBS, MOCK_APPLICANTS } from '@/constants/mockData';
+import { MOCK_JOBS } from '@/constants/mockData';
 import { Badge } from '@/components/common/Badge';
-import { ChevronRight } from 'lucide-react';
 
 interface MyJDsPageProps {
   onNavigate: (page: string) => void;

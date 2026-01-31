@@ -1,4 +1,3 @@
-import React from 'react';
 import { FONTS } from '@/constants/fonts';
 
 interface LoginPageProps {

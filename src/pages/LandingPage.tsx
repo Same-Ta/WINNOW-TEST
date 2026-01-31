@@ -58,22 +58,144 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
         </div>
 
         {/* 3D Funnel Graphic */}
-        <div className="funnel-container flex flex-col items-center justify-center pt-8">
-            <div className="funnel-layer funnel-top float-anim flex items-center justify-center border-t border-white/20">
-                <span className="text-white font-bold text-xs tracking-widest funnel-text opacity-90">JD OPTIMIZATION</span>
-            </div>
-            <div className="funnel-layer funnel-middle float-anim flex items-center justify-center border-t border-white/10" style={{animationDelay: '0.2s'}}>
-                <span className="text-white font-bold text-xs tracking-widest funnel-text opacity-90">AI SCREENING</span>
-            </div>
-            <div className="funnel-layer funnel-bottom float-anim flex items-center justify-center border-t border-white/10" style={{animationDelay: '0.4s'}}>
-                <span className="text-white font-bold text-xs tracking-widest funnel-text opacity-90">SHORTLIST</span>
-            </div>
+        <div className="funnel-wrapper">
+            <div className="funnel-main">
+                <div className="funnel-arrows">
+                    <div className="funnel-arrow"></div>
+                    <div className="funnel-arrow"></div>
+                    <div className="funnel-arrow"></div>
+                </div>
+                <div className="funnel-container">
+                {/* Top Layer */}
+                <div className="funnel-layer funnel-top" 
+                     onMouseEnter={() => document.getElementById('desc-top')?.classList.add('active')}
+                     onMouseLeave={() => document.getElementById('desc-top')?.classList.remove('active')}
+                     style={{ width: '550px', height: '130px', marginBottom: '-5px', zIndex: 30 }}>
+                    <svg width="550" height="130" viewBox="0 0 550 130" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="topGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                            </linearGradient>
+                            <radialGradient id="topRim" cx="50%" cy="50%">
+                                <stop offset="0%" style={{ stopColor: '#BFDBFE', stopOpacity: 1 }} />
+                                <stop offset="40%" style={{ stopColor: '#93C5FD', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                            </radialGradient>
+                        </defs>
+                        {/* Top rim ellipse */}
+                        <ellipse cx="275" cy="22" rx="273" ry="22" fill="url(#topRim)" opacity="0.95"/>
+                        {/* Curved sides using quadratic bezier */}
+                        <path d="M 2 22 Q 90 130, 178 130 L 372 130 Q 460 130, 548 22 L 548 22 Q 460 42, 275 42 Q 90 42, 2 22 Z" 
+                              fill="url(#topGrad)" />
+                        {/* Inner shadows for depth */}
+                        <path d="M 2 22 Q 90 130, 178 130 L 200 130 Q 110 130, 25 22 Z" 
+                              fill="black" opacity="0.15"/>
+                        <path d="M 548 22 Q 460 130, 372 130 L 350 130 Q 440 130, 525 22 Z" 
+                              fill="white" opacity="0.12"/>
+                    </svg>
+                    <span className="funnel-text">JD OPTIMIZATION</span>
+                </div>
 
-            <h3 className="mt-16 text-2xl font-bold text-slate-800 tracking-tight">Unlock your Hiring Potential</h3>
-            <div className="flex gap-2.5 mt-4">
-                <div className="w-2 h-2 rounded-full bg-slate-800"></div>
-                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                {/* Middle Layer */}
+                <div className="funnel-layer funnel-middle" 
+                     onMouseEnter={() => document.getElementById('desc-middle')?.classList.add('active')}
+                     onMouseLeave={() => document.getElementById('desc-middle')?.classList.remove('active')}
+                     style={{ width: '465px', height: '125px', marginBottom: '-5px', zIndex: 20 }}>
+                    <svg width="465" height="125" viewBox="0 0 465 125" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="midGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style={{ stopColor: '#2563EB', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#2563EB', stopOpacity: 1 }} />
+                            </linearGradient>
+                            <radialGradient id="midRim" cx="50%" cy="50%">
+                                <stop offset="0%" style={{ stopColor: '#93C5FD', stopOpacity: 1 }} />
+                                <stop offset="40%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                            </radialGradient>
+                        </defs>
+                        <ellipse cx="232.5" cy="20" rx="230" ry="20" fill="url(#midRim)" opacity="0.95"/>
+                        <path d="M 2.5 20 Q 75 125, 147.5 125 L 317.5 125 Q 390 125, 462.5 20 L 462.5 20 Q 390 38, 232.5 38 Q 75 38, 2.5 20 Z" 
+                              fill="url(#midGrad)" />
+                        <path d="M 2.5 20 Q 75 125, 147.5 125 L 167.5 125 Q 92 125, 22 20 Z" 
+                              fill="black" opacity="0.18"/>
+                        <path d="M 462.5 20 Q 390 125, 317.5 125 L 297.5 125 Q 373 125, 443 20 Z" 
+                              fill="white" opacity="0.1"/>
+                    </svg>
+                    <span className="funnel-text">AI SCREENING</span>
+                </div>
+
+                {/* Bottom Layer */}
+                <div className="funnel-layer funnel-bottom" 
+                     onMouseEnter={() => document.getElementById('desc-bottom')?.classList.add('active')}
+                     onMouseLeave={() => document.getElementById('desc-bottom')?.classList.remove('active')}
+                     style={{ width: '370px', height: '115px', zIndex: 10 }}>
+                    <svg width="370" height="115" viewBox="0 0 370 115" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style={{ stopColor: '#1D4ED8', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#2563EB', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#1D4ED8', stopOpacity: 1 }} />
+                            </linearGradient>
+                            <radialGradient id="botRim" cx="50%" cy="50%">
+                                <stop offset="0%" style={{ stopColor: '#60A5FA', stopOpacity: 1 }} />
+                                <stop offset="40%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#2563EB', stopOpacity: 1 }} />
+                            </radialGradient>
+                        </defs>
+                        <ellipse cx="185" cy="18" rx="183" ry="18" fill="url(#botRim)" opacity="0.95"/>
+                        <path d="M 2 18 Q 60 115, 118 115 L 252 115 Q 310 115, 368 18 L 368 18 Q 310 34, 185 34 Q 60 34, 2 18 Z" 
+                              fill="url(#botGrad)" />
+                        <path d="M 2 18 Q 60 115, 118 115 L 135 115 Q 75 115, 20 18 Z" 
+                              fill="black" opacity="0.22"/>
+                        <path d="M 368 18 Q 310 115, 252 115 L 235 115 Q 295 115, 350 18 Z" 
+                              fill="white" opacity="0.08"/>
+                    </svg>
+                    <span className="funnel-text">SHORTLIST</span>
+                </div>
             </div>
+            </div>
+            
+            {/* Description Boxes */}
+            <div className="funnel-descriptions">
+                <div id="desc-top" className="funnel-description">
+                    <h4>JD 최적화</h4>
+                    <p>AI가 채용공고를 분석하여 최적의 인재를 찾을 수 있도록 개선합니다.</p>
+                    <ul>
+                        <li>직무 요구사항 명확화</li>
+                        <li>키워드 최적화로 검색 노출 증대</li>
+                        <li>매력적인 공고 문구 자동 생성</li>
+                    </ul>
+                </div>
+                
+                <div id="desc-middle" className="funnel-description">
+                    <h4>AI 스크리닝</h4>
+                    <p>수백 개의 지원서를 AI가 자동으로 분석하여 적합한 후보를 선별합니다.</p>
+                    <ul>
+                        <li>이력서 자동 파싱 및 분석</li>
+                        <li>직무 적합도 AI 평가</li>
+                        <li>허수 지원자 필터링</li>
+                    </ul>
+                </div>
+                
+                <div id="desc-bottom" className="funnel-description">
+                    <h4>최종 후보 선정</h4>
+                    <p>상위 매칭 후보들을 한눈에 확인하고 인터뷰를 진행하세요.</p>
+                    <ul>
+                        <li>Top 후보자 리스트 자동 생성</li>
+                        <li>종합 평가 리포트 제공</li>
+                        <li>일정 관리 및 알림</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <h3 className="mt-20 text-2xl font-bold text-slate-800 tracking-tight">Unlock your Hiring Potential</h3>
+        <div className="flex gap-2.5 mt-4">
+            <div className="w-2 h-2 rounded-full bg-slate-800"></div>
+            <div className="w-2 h-2 rounded-full bg-slate-300"></div>
         </div>
       </section>
 

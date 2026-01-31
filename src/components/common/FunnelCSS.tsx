@@ -1,46 +1,159 @@
 export const FunnelCSS = () => (
     <style>{`
-        .funnel-container {
-            perspective: 1000px;
+        .funnel-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
         }
+        
+        .funnel-main {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .funnel-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.3));
+        }
+        
+        /* Arrows */
+        .funnel-arrows {
+            display: flex;
+            gap: 50px;
+            justify-content: center;
+            margin-bottom: -10px;
+            position: relative;
+            z-index: 100;
+        }
+        
+        .funnel-arrow {
+            width: 60px;
+            height: 60px;
+            position: relative;
+        }
+        
+        .funnel-arrow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 38px;
+            background: linear-gradient(180deg, #93C5FD 0%, #60A5FA 100%);
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .funnel-arrow::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 14px solid transparent;
+            border-right: 14px solid transparent;
+            border-top: 18px solid #60A5FA;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+        
         .funnel-layer {
             position: relative;
-            margin: 0 auto;
-            border-radius: 50%;
-            transform-style: preserve-3d;
-            box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
         }
-        .funnel-top {
-            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-            width: 320px;
-            height: 60px;
-            z-index: 30;
-            transform: rotateX(50deg);
-            margin-bottom: -30px;
+        
+        .funnel-layer:hover {
+            transform: scale(1.03);
+            filter: brightness(1.1);
         }
-        .funnel-middle {
-            background: linear-gradient(135deg, #1E40AF 0%, #172554 100%);
-            width: 240px;
-            height: 50px;
-            z-index: 20;
-            transform: rotateX(50deg);
-            margin-bottom: -25px;
+        
+        .funnel-layer svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
-        .funnel-bottom {
-            background: linear-gradient(135deg, #172554 0%, #0F172A 100%);
-            width: 140px;
-            height: 30px;
-            z-index: 10;
-            transform: rotateX(50deg);
-        }
+        
         .funnel-text {
-            transform: rotateX(-20deg);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 100;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            color: white;
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.5),
+                0 0 10px rgba(0, 0, 0, 0.3),
+                -1px -1px 2px rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
         }
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotateX(50deg); }
-            50% { transform: translateY(-10px) rotateX(50deg); }
+        
+        /* Description Box */
+        .funnel-descriptions {
+            position: relative;
+            width: 320px;
+            height: 400px;
         }
-        .float-anim { animation: float 4s ease-in-out infinite; }
+        
+        .funnel-description {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            pointer-events: none;
+            border: 2px solid #E5E7EB;
+        }
+        
+        .funnel-description.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        
+        .funnel-description h4 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1E293B;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        
+        .funnel-description p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #64748B;
+            margin: 0;
+        }
+        
+        .funnel-description ul {
+            margin-top: 16px;
+            padding-left: 20px;
+        }
+        
+        .funnel-description li {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #475569;
+            margin-bottom: 8px;
+        }
     `}</style>
 );

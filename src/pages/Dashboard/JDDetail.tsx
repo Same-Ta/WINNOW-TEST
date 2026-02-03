@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { X } from 'lucide-react';
 
 interface JDDetailProps {
     jdId?: string;
@@ -31,6 +32,18 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
     const [jdData, setJdData] = useState<JDData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [showApplicationModal, setShowApplicationModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    
+    // 지원서 폼 데이터
+    const [applicationForm, setApplicationForm] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        gender: '',
+        requirementAnswers: {} as Record<number, boolean>,
+        preferredAnswers: {} as Record<number, boolean>
+    });
     
     const currentUserId = auth.currentUser?.uid;
     const isOwner = currentUserId && jdData?.userId === currentUserId;
@@ -64,13 +77,89 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
     }, [jdId]);
 
     const handleShare = async () => {
+        if (!jdId) return;
+        
         try {
-            const currentUrl = window.location.href;
-            await navigator.clipboard.writeText(currentUrl);
-            alert('링크가 클립보드에 복사되었습니다!');
+            // 베이스 URL 가져오기 (origin)
+            const baseUrl = window.location.origin;
+            
+            // 공유 링크 생성 - 경로 기반 라우팅 사용 (Vercel 최적화)
+            // 각 JD마다 고유한 URL을 가짐: /jd/[jdId]
+            const shareUrl = `${baseUrl}/jd/${jdId}`;
+            
+            await navigator.clipboard.writeText(shareUrl);
+            console.log('공유 링크 생성:', shareUrl);
+            alert('공고 링크가 클립보드에 복사되었습니다!\n지원자에게 이 링크를 공유하세요.');
         } catch (err) {
             console.error('클립보드 복사 실패:', err);
-            alert('링크 복사에 실패했습니다.');
+            // fallback: 링크를 수동으로 보여주기
+            const baseUrl = window.location.origin;
+            const shareUrl = `${baseUrl}/jd/${jdId}`;
+            prompt('아래 링크를 복사하세요:', shareUrl);
+        }
+    };
+
+    const handleApplicationSubmit = async () => {
+        // 유효성 검사
+        if (!applicationForm.name || !applicationForm.email || !applicationForm.phone) {
+            alert('이름, 이메일, 연락처는 필수 입력 항목입니다.');
+            return;
+        }
+
+        if (!jdId || !jdData) {
+            alert('공고 정보를 불러올 수 없습니다.');
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            // 체크리스트 응답 데이터 변환
+            const requirementResponses = jdData.requirements?.map((item, idx) => ({
+                question: item,
+                answer: applicationForm.requirementAnswers[idx] ? 'Y' : 'N'
+            })) || [];
+
+            const preferredResponses = jdData.preferred?.map((item, idx) => ({
+                question: item,
+                answer: applicationForm.preferredAnswers[idx] ? 'Y' : 'N'
+            })) || [];
+
+            // Firestore에 지원서 저장
+            const applicationData = {
+                jdId: jdId,
+                jdTitle: jdData.title,
+                recruiterId: jdData.userId,
+                applicantName: applicationForm.name,
+                applicantEmail: applicationForm.email,
+                applicantPhone: applicationForm.phone,
+                applicantGender: applicationForm.gender || '',
+                requirementAnswers: requirementResponses,
+                preferredAnswers: preferredResponses,
+                appliedAt: serverTimestamp(),
+                status: '검토중'
+            };
+
+            await addDoc(collection(db, 'applications'), applicationData);
+
+            alert('지원이 완료되었습니다! 검토 후 연락드리겠습니다.');
+            setShowApplicationModal(false);
+            
+            // 폼 초기화
+            setApplicationForm({
+                name: '',
+                email: '',
+                phone: '',
+                gender: '',
+                requirementAnswers: {},
+                preferredAnswers: {}
+            });
+
+        } catch (error) {
+            console.error('지원서 제출 실패:', error);
+            alert('지원서 제출에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -279,12 +368,17 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
 
                         {/* Footer */}
                         <div className="pt-6 border-t border-gray-100 flex justify-end items-center">
-                            <button className="px-6 py-3 bg-blue-600 text-white rounded-lg text-[14px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                지원하기
-                            </button>
+                            {!isOwner && (
+                                <button 
+                                    onClick={() => setShowApplicationModal(true)}
+                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg text-[14px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    지원하기
+                                </button>
+                            )}
                         </div>
 
                         {/* Branding */}
@@ -294,6 +388,152 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                     </div>
                 </div>
             </div>
+
+            {/* 지원서 작성 모달 */}
+            {showApplicationModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        {/* 모달 헤더 */}
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-900">지원서 작성</h3>
+                            <button 
+                                onClick={() => setShowApplicationModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* 모달 본문 */}
+                        <div className="p-6 space-y-6">
+                            {/* 기본 정보 */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">기본 정보</h4>
+                                
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">이름 *</label>
+                                    <input
+                                        type="text"
+                                        value={applicationForm.name}
+                                        onChange={(e) => setApplicationForm({ ...applicationForm, name: e.target.value })}
+                                        placeholder="홍길동"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">이메일 *</label>
+                                    <input
+                                        type="email"
+                                        value={applicationForm.email}
+                                        onChange={(e) => setApplicationForm({ ...applicationForm, email: e.target.value })}
+                                        placeholder="example@email.com"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">연락처 *</label>
+                                    <input
+                                        type="tel"
+                                        value={applicationForm.phone}
+                                        onChange={(e) => setApplicationForm({ ...applicationForm, phone: e.target.value })}
+                                        placeholder="010-0000-0000"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">성별</label>
+                                    <select
+                                        value={applicationForm.gender}
+                                        onChange={(e) => setApplicationForm({ ...applicationForm, gender: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="">선택 안 함</option>
+                                        <option value="남성">남성</option>
+                                        <option value="여성">여성</option>
+                                        <option value="기타">기타</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* 자격 요건 체크리스트 */}
+                            {jdData?.requirements && jdData.requirements.length > 0 && (
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">자격 요건</h4>
+                                    <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                                        {jdData.requirements.map((item, idx) => (
+                                            <label key={idx} className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={applicationForm.requirementAnswers[idx] || false}
+                                                    onChange={(e) => setApplicationForm({
+                                                        ...applicationForm,
+                                                        requirementAnswers: {
+                                                            ...applicationForm.requirementAnswers,
+                                                            [idx]: e.target.checked
+                                                        }
+                                                    })}
+                                                    className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 우대 사항 체크리스트 */}
+                            {jdData?.preferred && jdData.preferred.length > 0 && (
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">우대 사항</h4>
+                                    <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                                        {jdData.preferred.map((item, idx) => (
+                                            <label key={idx} className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={applicationForm.preferredAnswers[idx] || false}
+                                                    onChange={(e) => setApplicationForm({
+                                                        ...applicationForm,
+                                                        preferredAnswers: {
+                                                            ...applicationForm.preferredAnswers,
+                                                            [idx]: e.target.checked
+                                                        }
+                                                    })}
+                                                    className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm text-gray-700">{item}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 모달 푸터 */}
+                        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowApplicationModal(false)}
+                                className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                disabled={submitting}
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={handleApplicationSubmit}
+                                disabled={submitting}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitting ? '제출 중...' : '지원하기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

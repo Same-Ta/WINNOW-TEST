@@ -8,9 +8,11 @@ interface Application {
     id: string;
     applicantName: string;
     applicantEmail: string;
+    applicantPhone?: string;
     applicantGender?: string;
     jdTitle: string;
-    answers: Array<{ question: string; answer: string }>;
+    requirementAnswers?: Array<{ question: string; answer: string }>;
+    preferredAnswers?: Array<{ question: string; answer: string }>;
     appliedAt: any;
     status: string;
 }
@@ -110,11 +112,25 @@ export const ApplicantList = () => {
                 return;
             }
 
-            const answersText = application.answers
-                .map(a => `질문: ${a.question}\n답변: ${a.answer}`)
-                .join('\n\n');
+            // 답변 텍스트 생성
+            let answersText = ``;
+            
+            if (application.requirementAnswers && application.requirementAnswers.length > 0) {
+                answersText += `[자격 요건]\n`;
+                application.requirementAnswers.forEach(a => {
+                    answersText += `- ${a.question}: ${a.answer === 'Y' ? '충족함' : '미충족'}\n`;
+                });
+                answersText += `\n`;
+            }
+            
+            if (application.preferredAnswers && application.preferredAnswers.length > 0) {
+                answersText += `[우대 사항]\n`;
+                application.preferredAnswers.forEach(a => {
+                    answersText += `- ${a.question}: ${a.answer === 'Y' ? '충족함' : '미충족'}\n`;
+                });
+            }
 
-            const prompt = `다음은 ${application.applicantName}님이 ${application.jdTitle} 포지션에 지원하면서 작성한 답변입니다.\n\n${answersText}\n\n위 내용을 분석하여 다음 항목으로 요약해주세요:\n1. 지원자의 핵심 강점 (2-3줄)\n2. 주요 경험 및 역량 (3-4개 항목)\n3. 포지션 적합도 평가 (2-3줄)\n4. 종합 의견 (2-3줄)\n\n전문적이고 객관적인 톤으로 작성해주세요.`;
+            const prompt = `다음은 ${application.applicantName}님이 ${application.jdTitle} 포지션에 지원하면서 작성한 답변입니다.\n\n${answersText}\n\n위 내용을 분석하여 다음 항목으로 요약해주세요:\n1. 지원자의 핵심 강점 (2-3줄)\n2. 충족한 자격요건 및 우대사항 요약\n3. 포지션 적합도 평가 (2-3줄)\n4. 종합 의견 (2-3줄)\n\n전문적이고 객관적인 톤으로 작성해주세요.`;
 
             // fetch API 직접 사용
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
@@ -175,25 +191,18 @@ export const ApplicantList = () => {
                 recruiterId: currentUser.uid,
                 applicantName: '김지원',
                 applicantEmail: 'jiwon.kim@example.com',
+                applicantPhone: '010-1234-5678',
                 applicantGender: '여성',
                 jdTitle: '프론트엔드 개발자',
-                answers: [
-                    {
-                        question: '본인의 주요 경력과 프로젝트 경험을 소개해주세요.',
-                        answer: '저는 3년차 프론트엔드 개발자로, React와 TypeScript를 주로 사용합니다. 최근에는 대규모 이커머스 플랫폼의 리뉴얼 프로젝트에서 팀 리드로 참여하여 성능 최적화를 통해 페이지 로딩 속도를 40% 개선했습니다. 또한 컴포넌트 라이브러리를 구축하여 개발 생산성을 크게 향상시켰습니다.'
-                    },
-                    {
-                        question: '가장 어려웠던 기술적 도전과 해결 방법을 설명해주세요.',
-                        answer: '대용량 데이터를 실시간으로 렌더링해야 하는 대시보드 개발이 가장 어려웠습니다. 가상 스크롤링과 메모이제이션을 활용하여 수천 개의 데이터 항목을 부드럽게 표시할 수 있었고, React Query를 도입하여 서버 상태 관리를 효율화했습니다. 결과적으로 초기 렌더링 시간을 3초에서 0.8초로 단축시켰습니다.'
-                    },
-                    {
-                        question: '팀워크와 협업 경험에 대해 말씀해주세요.',
-                        answer: '크로스 펑셔널 팀에서 디자이너, 백엔드 개발자들과 긴밀히 협업했습니다. 주간 코드 리뷰를 주도하여 팀 전체의 코드 품질을 향상시켰고, 디자인 시스템 구축 시 디자이너들과 지속적으로 소통하며 개발자 친화적인 컴포넌트를 만들었습니다. 또한 기술 문서화를 통해 신규 팀원의 온보딩 시간을 50% 단축시켰습니다.'
-                    },
-                    {
-                        question: '우리 회사에 지원한 동기와 향후 목표를 알려주세요.',
-                        answer: '귀사의 혁신적인 제품과 기술 중심 문화에 매력을 느꼈습니다. 특히 AI 기반 채용 솔루션이라는 도메인에서 사용자 경험을 개선하는 데 기여하고 싶습니다. 향후 3년 내에 프론트엔드 아키텍처를 설계하고 주니어 개발자들을 멘토링할 수 있는 시니어 개발자로 성장하는 것이 목표입니다.'
-                    }
+                requirementAnswers: [
+                    { question: 'React 3년 이상 경험', answer: 'Y' },
+                    { question: 'TypeScript 사용 경험', answer: 'Y' },
+                    { question: '팀 리더 경험', answer: 'Y' }
+                ],
+                preferredAnswers: [
+                    { question: 'Next.js 사용 경험', answer: 'Y' },
+                    { question: '대규모 프로젝트 경험', answer: 'Y' },
+                    { question: '성능 최적화 경험', answer: 'Y' }
                 ],
                 appliedAt: Timestamp.now(),
                 status: '검토중'
@@ -217,7 +226,7 @@ export const ApplicantList = () => {
         ? applications
         : applications.filter(app => app.status === statusFilter);
 
-    const statusOptions = ['검토중', '보류', '합격', '불합격'];
+    const statusOptions = ['검토중', '합격', '불합격'];
 
     if (loading) {
         return (
@@ -291,7 +300,7 @@ export const ApplicantList = () => {
                          <th className="px-6 py-4">성별</th>
                          <th className="px-6 py-4">지원 일시</th>
                          <th className="px-6 py-4">작성 내용</th>
-                         <th className="px-6 py-4 text-right">상태</th>
+                         <th className="px-6 py-4 text-center">상태</th>
                      </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-50">
@@ -326,25 +335,35 @@ export const ApplicantList = () => {
                                          AI 분석
                                      </button>
                                  </td>
-                                 <td className="px-6 py-5 text-right">
-                                     <select
-                                         value={application.status}
-                                         onChange={(e) => {
-                                             e.stopPropagation();
-                                             handleStatusChange(application.id, e.target.value);
-                                         }}
-                                         onClick={(e) => e.stopPropagation()}
-                                         className={`px-3 py-1.5 rounded text-[11px] font-bold border-0 cursor-pointer focus:ring-2 focus:ring-blue-500 ${
-                                             application.status === '합격' ? 'bg-green-100 text-green-600' :
-                                             application.status === '불합격' ? 'bg-red-100 text-red-600' :
-                                             application.status === '보류' ? 'bg-yellow-100 text-yellow-600' :
-                                             'bg-purple-100 text-purple-600'
-                                         }`}
-                                     >
-                                         {statusOptions.map(status => (
-                                             <option key={status} value={status}>{status}</option>
-                                         ))}
-                                     </select>
+                                 <td className="px-6 py-5">
+                                     <div className="flex justify-center gap-1">
+                                         <button
+                                             onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 handleStatusChange(application.id, '합격');
+                                             }}
+                                             className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                                                 application.status === '합격' 
+                                                     ? 'bg-green-500 text-white shadow-md' 
+                                                     : 'bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-600'
+                                             }`}
+                                         >
+                                             합격
+                                         </button>
+                                         <button
+                                             onClick={(e) => {
+                                                 e.stopPropagation();
+                                                 handleStatusChange(application.id, '불합격');
+                                             }}
+                                             className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                                                 application.status === '불합격' 
+                                                     ? 'bg-red-500 text-white shadow-md' 
+                                                     : 'bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600'
+                                             }`}
+                                         >
+                                             불합격
+                                         </button>
+                                     </div>
                                  </td>
                              </tr>
                          ))
@@ -411,20 +430,48 @@ export const ApplicantList = () => {
                                  <h3 className="text-lg font-bold text-gray-900">전체 답변 내용</h3>
                              </div>
                              
-                             <div className="space-y-4">
-                                 {selectedApplicant.answers.map((answer, index) => (
-                                     <div key={index} className="bg-white rounded-xl p-5 border border-gray-200 hover:border-blue-200 transition-colors">
-                                         <div className="flex items-start gap-3">
-                                             <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
-                                                 {index + 1}
-                                             </div>
-                                             <div className="flex-1">
-                                                 <h4 className="font-bold text-gray-900 mb-2">{answer.question}</h4>
-                                                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{answer.answer}</p>
-                                             </div>
+                             <div className="space-y-6">
+                                 {/* 자격 요건 */}
+                                 {selectedApplicant.requirementAnswers && selectedApplicant.requirementAnswers.length > 0 && (
+                                     <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                         <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                             <span className="text-blue-600">✓</span> 자격 요건
+                                         </h4>
+                                         <div className="space-y-2">
+                                             {selectedApplicant.requirementAnswers.map((answer, index) => (
+                                                 <div key={index} className="flex items-center gap-2">
+                                                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                         answer.answer === 'Y' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                                                     }`}>
+                                                         {answer.answer === 'Y' ? '✓' : '✗'}
+                                                     </span>
+                                                     <p className="text-gray-700">{answer.question}</p>
+                                                 </div>
+                                             ))}
                                          </div>
                                      </div>
-                                 ))}
+                                 )}
+
+                                 {/* 우대 사항 */}
+                                 {selectedApplicant.preferredAnswers && selectedApplicant.preferredAnswers.length > 0 && (
+                                     <div className="bg-white rounded-xl p-5 border border-gray-200">
+                                         <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                             <span className="text-purple-600">★</span> 우대 사항
+                                         </h4>
+                                         <div className="space-y-2">
+                                             {selectedApplicant.preferredAnswers.map((answer, index) => (
+                                                 <div key={index} className="flex items-center gap-2">
+                                                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                         answer.answer === 'Y' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'
+                                                     }`}>
+                                                         {answer.answer === 'Y' ? '✓' : '✗'}
+                                                     </span>
+                                                     <p className="text-gray-700">{answer.question}</p>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 )}
                              </div>
                          </div>
                      </div>

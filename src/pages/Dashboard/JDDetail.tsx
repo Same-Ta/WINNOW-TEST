@@ -41,11 +41,8 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
         email: '',
         phone: '',
         gender: '',
-        resumeUrl: '',
-        portfolioUrl: '',
         requirementAnswers: {} as Record<number, boolean>,
-        preferredAnswers: {} as Record<number, boolean>,
-        additionalMessage: ''
+        preferredAnswers: {} as Record<number, boolean>
     });
     
     const currentUserId = auth.currentUser?.uid;
@@ -137,11 +134,8 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                 applicantEmail: applicationForm.email,
                 applicantPhone: applicationForm.phone,
                 applicantGender: applicationForm.gender || '',
-                resumeUrl: applicationForm.resumeUrl || '',
-                portfolioUrl: applicationForm.portfolioUrl || '',
                 requirementAnswers: requirementResponses,
                 preferredAnswers: preferredResponses,
-                additionalMessage: applicationForm.additionalMessage || '',
                 appliedAt: serverTimestamp(),
                 status: '검토중'
             };
@@ -157,11 +151,8 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                 email: '',
                 phone: '',
                 gender: '',
-                resumeUrl: '',
-                portfolioUrl: '',
                 requirementAnswers: {},
-                preferredAnswers: {},
-                additionalMessage: ''
+                preferredAnswers: {}
             });
 
         } catch (error) {
@@ -468,28 +459,6 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                                         <option value="기타">기타</option>
                                     </select>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">이력서 링크</label>
-                                    <input
-                                        type="url"
-                                        value={applicationForm.resumeUrl}
-                                        onChange={(e) => setApplicationForm({ ...applicationForm, resumeUrl: e.target.value })}
-                                        placeholder="https://..."
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">포트폴리오 링크</label>
-                                    <input
-                                        type="url"
-                                        value={applicationForm.portfolioUrl}
-                                        onChange={(e) => setApplicationForm({ ...applicationForm, portfolioUrl: e.target.value })}
-                                        placeholder="https://..."
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
                             </div>
 
                             {/* 자격 요건 체크리스트 */}
@@ -543,18 +512,6 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                                     </div>
                                 </div>
                             )}
-
-                            {/* 추가 메시지 */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">추가 메시지</label>
-                                <textarea
-                                    value={applicationForm.additionalMessage}
-                                    onChange={(e) => setApplicationForm({ ...applicationForm, additionalMessage: e.target.value })}
-                                    placeholder="자기소개나 추가로 전달하고 싶은 내용을 작성해주세요."
-                                    rows={4}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                />
-                            </div>
                         </div>
 
                         {/* 모달 푸터 */}

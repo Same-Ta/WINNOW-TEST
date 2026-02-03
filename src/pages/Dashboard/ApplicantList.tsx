@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Filter, Download, MoreHorizontal, ExternalLink } from 'lucide-react';
+import { Filter, Download, MoreHorizontal } from 'lucide-react';
 import { db, auth } from '@/config/firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
 
@@ -10,11 +10,8 @@ interface Application {
     applicantPhone?: string;
     applicantGender?: string;
     jdTitle: string;
-    resumeUrl?: string;
-    portfolioUrl?: string;
     requirementAnswers?: Array<{ question: string; answer: string }>;
     preferredAnswers?: Array<{ question: string; answer: string }>;
-    additionalMessage?: string;
     appliedAt: any;
     status: string;
 }
@@ -87,7 +84,7 @@ export const ApplicantList = () => {
         ? applications
         : applications.filter(app => app.status === statusFilter);
 
-    const statusOptions = ['검토중', '보류', '합격', '불합격'];
+    const statusOptions = ['검토중', '합격', '불합격'];
 
     if (loading) {
         return (
@@ -155,7 +152,7 @@ export const ApplicantList = () => {
                          <th className="px-6 py-4">성별</th>
                          <th className="px-6 py-4">지원 일시</th>
                          <th className="px-6 py-4">작성 내용</th>
-                         <th className="px-6 py-4 text-right">상태</th>
+                         <th className="px-6 py-4 text-center">상태</th>
                      </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-50">
@@ -167,7 +164,7 @@ export const ApplicantList = () => {
                          </tr>
                      ) : (
                          filteredApplications.map((application) => (
-                             <tr key={application.id} className="hover:bg-blue-50/30 transition-colors group cursor-pointer">
+                             <tr key={application.id} className="hover:bg-blue-50/30 transition-colors group">
                                  <td className="px-6 py-5"><input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"/></td>
                                  <td className="px-6 py-5">
                                      <div className="font-bold text-[14px] text-gray-900">{application.applicantName}</div>
@@ -186,8 +183,6 @@ export const ApplicantList = () => {
                                              detailText += `이메일: ${application.applicantEmail}\n`;
                                              if (application.applicantPhone) detailText += `연락처: ${application.applicantPhone}\n`;
                                              if (application.applicantGender) detailText += `성별: ${application.applicantGender}\n`;
-                                             if (application.resumeUrl) detailText += `이력서: ${application.resumeUrl}\n`;
-                                             if (application.portfolioUrl) detailText += `포트폴리오: ${application.portfolioUrl}\n`;
                                              
                                              if (application.requirementAnswers && application.requirementAnswers.length > 0) {
                                                  detailText += `\n[자격 요건]\n`;
@@ -203,33 +198,46 @@ export const ApplicantList = () => {
                                                  });
                                              }
                                              
-                                             if (application.additionalMessage) {
-                                                 detailText += `\n[추가 메시지]\n${application.additionalMessage}`;
-                                             }
-                                             
                                              alert(detailText);
                                          }}
-                                         className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-[12px] font-medium"
+                                         className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded text-[12px] font-medium transition-colors"
                                      >
-                                         <ExternalLink size={14} />
-                                         확인
+                                         보기
                                      </button>
                                  </td>
-                                 <td className="px-6 py-5 text-right">
-                                     <select
-                                         value={application.status}
-                                         onChange={(e) => handleStatusChange(application.id, e.target.value)}
-                                         className={`px-3 py-1.5 rounded text-[11px] font-bold border-0 cursor-pointer focus:ring-2 focus:ring-blue-500 ${
-                                             application.status === '합격' ? 'bg-green-100 text-green-600' :
-                                             application.status === '불합격' ? 'bg-red-100 text-red-600' :
-                                             application.status === '보류' ? 'bg-yellow-100 text-yellow-600' :
-                                             'bg-purple-100 text-purple-600'
-                                         }`}
-                                     >
-                                         {statusOptions.map(status => (
-                                             <option key={status} value={status}>{status}</option>
-                                         ))}
-                                     </select>
+                                 <td className="px-6 py-5">
+                                     <div className="flex justify-center gap-1">
+                                         <button
+                                             onClick={() => handleStatusChange(application.id, '합격')}
+                                             className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                                                 application.status === '합격' 
+                                                     ? 'bg-green-500 text-white shadow-md' 
+                                                     : 'bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-600'
+                                             }`}
+                                         >
+                                             합격
+                                         </button>
+                                         <button
+                                             onClick={() => handleStatusChange(application.id, '불합격')}
+                                             className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                                                 application.status === '불합격' 
+                                                     ? 'bg-red-500 text-white shadow-md' 
+                                                     : 'bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600'
+                                             }`}
+                                         >
+                                             불합격
+                                         </button>
+                                         <button
+                                             onClick={() => handleStatusChange(application.id, '검토중')}
+                                             className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                                                 application.status === '검토중' 
+                                                     ? 'bg-purple-500 text-white shadow-md' 
+                                                     : 'bg-gray-100 text-gray-500 hover:bg-purple-100 hover:text-purple-600'
+                                             }`}
+                                         >
+                                             검토중
+                                         </button>
+                                     </div>
                                  </td>
                              </tr>
                          ))

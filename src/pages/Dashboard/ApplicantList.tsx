@@ -7,9 +7,14 @@ interface Application {
     id: string;
     applicantName: string;
     applicantEmail: string;
+    applicantPhone?: string;
     applicantGender?: string;
     jdTitle: string;
-    answers: Array<{ question: string; answer: string }>;
+    resumeUrl?: string;
+    portfolioUrl?: string;
+    requirementAnswers?: Array<{ question: string; answer: string }>;
+    preferredAnswers?: Array<{ question: string; answer: string }>;
+    additionalMessage?: string;
     appliedAt: any;
     status: string;
 }
@@ -176,11 +181,33 @@ export const ApplicantList = () => {
                                  <td className="px-6 py-5">
                                      <button
                                          onClick={() => {
-                                             // 답변 모달이나 상세 페이지로 이동
-                                             const answersText = application.answers
-                                                 .map(a => `Q: ${a.question}\nA: ${a.answer}`)
-                                                 .join('\n\n');
-                                             alert(`${application.applicantName}님의 답변:\n\n${answersText}`);
+                                             // 답변 상세 내용 구성
+                                             let detailText = `${application.applicantName}님의 지원 정보\n\n`;
+                                             detailText += `이메일: ${application.applicantEmail}\n`;
+                                             if (application.applicantPhone) detailText += `연락처: ${application.applicantPhone}\n`;
+                                             if (application.applicantGender) detailText += `성별: ${application.applicantGender}\n`;
+                                             if (application.resumeUrl) detailText += `이력서: ${application.resumeUrl}\n`;
+                                             if (application.portfolioUrl) detailText += `포트폴리오: ${application.portfolioUrl}\n`;
+                                             
+                                             if (application.requirementAnswers && application.requirementAnswers.length > 0) {
+                                                 detailText += `\n[자격 요건]\n`;
+                                                 application.requirementAnswers.forEach(a => {
+                                                     detailText += `- ${a.question}: ${a.answer === 'Y' ? '✓ 충족' : '✗ 미충족'}\n`;
+                                                 });
+                                             }
+                                             
+                                             if (application.preferredAnswers && application.preferredAnswers.length > 0) {
+                                                 detailText += `\n[우대 사항]\n`;
+                                                 application.preferredAnswers.forEach(a => {
+                                                     detailText += `- ${a.question}: ${a.answer === 'Y' ? '✓ 충족' : '✗ 미충족'}\n`;
+                                                 });
+                                             }
+                                             
+                                             if (application.additionalMessage) {
+                                                 detailText += `\n[추가 메시지]\n${application.additionalMessage}`;
+                                             }
+                                             
+                                             alert(detailText);
                                          }}
                                          className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-[12px] font-medium"
                                      >

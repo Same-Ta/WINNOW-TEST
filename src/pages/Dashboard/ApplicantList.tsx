@@ -341,12 +341,6 @@ export const ApplicantList = () => {
              </div>
              <div className="flex gap-2 relative">
                  <button 
-                     onClick={addTestApplicant}
-                     className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"
-                 >
-                     <UserPlus size={16}/> 테스트 지원자 5명 추가
-                 </button>
-                 <button 
                      onClick={() => setShowFilterMenu(!showFilterMenu)}
                      className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-600 transition-colors"
                  >

@@ -1,4 +1,3 @@
-// ===== <AI 스크리닝 리포트> =====
 import { useState, useEffect } from 'react';
 import { Filter, Download, MoreHorizontal, X, Sparkles, FileText, UserPlus } from 'lucide-react';
 import { db, auth } from '@/config/firebase';
@@ -11,8 +10,8 @@ interface Application {
     applicantPhone?: string;
     applicantGender?: string;
     jdTitle: string;
-    requirementAnswers?: Array<{ question: string; answer: string }>;
-    preferredAnswers?: Array<{ question: string; answer: string }>;
+    requirementAnswers?: Array<{ question: string; checked: boolean; detail: string }>;
+    preferredAnswers?: Array<{ question: string; checked: boolean; detail: string }>;
     appliedAt: any;
     status: string;
 }
@@ -41,7 +40,7 @@ export const ApplicantList = () => {
                 return;
             }
 
-            console.log('지원서 로딩 시작, recruiterId:', currentUser.uid);
+            console.log('지원서 불러오는 중...', currentUser.uid);
 
             const applicationsQuery = query(
                 collection(db, 'applications'),
@@ -49,8 +48,6 @@ export const ApplicantList = () => {
             );
 
             const snapshot = await getDocs(applicationsQuery);
-            console.log('불러온 지원서 수:', snapshot.docs.length);
-            
             const applicationsData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -58,16 +55,16 @@ export const ApplicantList = () => {
 
             // 클라이언트 측에서 날짜순 정렬
             applicationsData.sort((a, b) => {
-                const dateA = a.appliedAt?.toDate ? a.appliedAt.toDate() : new Date(a.appliedAt);
-                const dateB = b.appliedAt?.toDate ? b.appliedAt.toDate() : new Date(b.appliedAt);
-                return dateB.getTime() - dateA.getTime();
+                const dateA = a.appliedAt?.toDate ? a.appliedAt.toDate().getTime() : 0;
+                const dateB = b.appliedAt?.toDate ? b.appliedAt.toDate().getTime() : 0;
+                return dateB - dateA;
             });
 
-            console.log('지원서 데이터:', applicationsData);
+            console.log('불러온 지원서:', applicationsData.length, '건');
             setApplications(applicationsData);
         } catch (error) {
             console.error('지원서 로딩 실패:', error);
-            alert('지원서 로딩 중 오류가 발생했습니다: ' + error);
+            alert('지원서를 불러오는 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
         }
@@ -589,4 +586,4 @@ export const ApplicantList = () => {
      </div>
     );
 };
-// ===== </AI 스크리닝 리포트> =====
+

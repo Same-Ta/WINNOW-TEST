@@ -41,8 +41,8 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
         email: '',
         phone: '',
         gender: '',
-        requirementAnswers: {} as Record<number, boolean>,
-        preferredAnswers: {} as Record<number, boolean>
+        requirementAnswers: {} as Record<number, { checked: boolean; detail: string }>,
+        preferredAnswers: {} as Record<number, { checked: boolean; detail: string }>
     });
     
     const currentUserId = auth.currentUser?.uid;
@@ -115,15 +115,23 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
 
         try {
             // 체크리스트 응답 데이터 변환
-            const requirementResponses = jdData.requirements?.map((item, idx) => ({
-                question: item,
-                answer: applicationForm.requirementAnswers[idx] ? 'Y' : 'N'
-            })) || [];
+            const requirementResponses = jdData.requirements?.map((item, idx) => {
+                const answer = applicationForm.requirementAnswers[idx];
+                return {
+                    question: item,
+                    checked: answer?.checked || false,
+                    detail: answer?.detail || ''
+                };
+            }) || [];
 
-            const preferredResponses = jdData.preferred?.map((item, idx) => ({
-                question: item,
-                answer: applicationForm.preferredAnswers[idx] ? 'Y' : 'N'
-            })) || [];
+            const preferredResponses = jdData.preferred?.map((item, idx) => {
+                const answer = applicationForm.preferredAnswers[idx];
+                return {
+                    question: item,
+                    checked: answer?.checked || false,
+                    detail: answer?.detail || ''
+                };
+            }) || [];
 
             // Firestore에 지원서 저장
             const applicationData = {
@@ -465,23 +473,48 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                             {jdData?.requirements && jdData.requirements.length > 0 && (
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">자격 요건</h4>
-                                    <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                                    <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
                                         {jdData.requirements.map((item, idx) => (
-                                            <label key={idx} className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={applicationForm.requirementAnswers[idx] || false}
-                                                    onChange={(e) => setApplicationForm({
-                                                        ...applicationForm,
-                                                        requirementAnswers: {
-                                                            ...applicationForm.requirementAnswers,
-                                                            [idx]: e.target.checked
-                                                        }
-                                                    })}
-                                                    className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm text-gray-700">{item}</span>
-                                            </label>
+                                            <div key={idx} className="space-y-2">
+                                                <label className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={applicationForm.requirementAnswers[idx]?.checked || false}
+                                                        onChange={(e) => setApplicationForm({
+                                                            ...applicationForm,
+                                                            requirementAnswers: {
+                                                                ...applicationForm.requirementAnswers,
+                                                                [idx]: {
+                                                                    checked: e.target.checked,
+                                                                    detail: applicationForm.requirementAnswers[idx]?.detail || ''
+                                                                }
+                                                            }
+                                                        })}
+                                                        className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700 flex-1">{item}</span>
+                                                </label>
+                                                {applicationForm.requirementAnswers[idx]?.checked && (
+                                                    <div className="ml-7 mt-2">
+                                                        <textarea
+                                                            value={applicationForm.requirementAnswers[idx]?.detail || ''}
+                                                            onChange={(e) => setApplicationForm({
+                                                                ...applicationForm,
+                                                                requirementAnswers: {
+                                                                    ...applicationForm.requirementAnswers,
+                                                                    [idx]: {
+                                                                        checked: true,
+                                                                        detail: e.target.value
+                                                                    }
+                                                                }
+                                                            })}
+                                                            placeholder="관련 경험이나 역량을 구체적으로 작성해주세요"
+                                                            rows={3}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -491,23 +524,48 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                             {jdData?.preferred && jdData.preferred.length > 0 && (
                                 <div className="space-y-3">
                                     <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider">우대 사항</h4>
-                                    <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                                    <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
                                         {jdData.preferred.map((item, idx) => (
-                                            <label key={idx} className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={applicationForm.preferredAnswers[idx] || false}
-                                                    onChange={(e) => setApplicationForm({
-                                                        ...applicationForm,
-                                                        preferredAnswers: {
-                                                            ...applicationForm.preferredAnswers,
-                                                            [idx]: e.target.checked
-                                                        }
-                                                    })}
-                                                    className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm text-gray-700">{item}</span>
-                                            </label>
+                                            <div key={idx} className="space-y-2">
+                                                <label className="flex items-start gap-3 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={applicationForm.preferredAnswers[idx]?.checked || false}
+                                                        onChange={(e) => setApplicationForm({
+                                                            ...applicationForm,
+                                                            preferredAnswers: {
+                                                                ...applicationForm.preferredAnswers,
+                                                                [idx]: {
+                                                                    checked: e.target.checked,
+                                                                    detail: applicationForm.preferredAnswers[idx]?.detail || ''
+                                                                }
+                                                            }
+                                                        })}
+                                                        className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700 flex-1">{item}</span>
+                                                </label>
+                                                {applicationForm.preferredAnswers[idx]?.checked && (
+                                                    <div className="ml-7 mt-2">
+                                                        <textarea
+                                                            value={applicationForm.preferredAnswers[idx]?.detail || ''}
+                                                            onChange={(e) => setApplicationForm({
+                                                                ...applicationForm,
+                                                                preferredAnswers: {
+                                                                    ...applicationForm.preferredAnswers,
+                                                                    [idx]: {
+                                                                        checked: true,
+                                                                        detail: e.target.value
+                                                                    }
+                                                                }
+                                                            })}
+                                                            placeholder="관련 경험이나 역량을 구체적으로 작성해주세요"
+                                                            rows={3}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>

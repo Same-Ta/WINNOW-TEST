@@ -1,12 +1,160 @@
 import { Plus, Users, FileText, ChevronRight, X } from 'lucide-react';
-import { MOCK_JOBS } from '@/constants/mockData';
-import { Badge } from '@/components/common/Badge';
+import { useState, useEffect } from 'react';
+import { db, auth } from '@/config/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface DashboardHomeProps {
   onNavigate: (page: string) => void;
 }
 
-export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => (
+interface StatusStats {
+    total: number;
+    passed: number;
+    pending: number;
+    rejected: number;
+    reviewing: number;
+    thisMonth: number;
+}
+
+interface DailyCount {
+    date: string;
+    count: number;
+}
+
+export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
+    const [stats, setStats] = useState<StatusStats>({
+        total: 0,
+        passed: 0,
+        pending: 0,
+        rejected: 0,
+        reviewing: 0,
+        thisMonth: 0
+    });
+    const [dailyData, setDailyData] = useState<DailyCount[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, []);
+
+    const fetchAnalytics = async () => {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                setLoading(false);
+                return;
+            }
+
+            const applicationsQuery = query(
+                collection(db, 'applications'),
+                where('recruiterId', '==', currentUser.uid)
+            );
+
+            const snapshot = await getDocs(applicationsQuery);
+            const applications = snapshot.docs.map(doc => doc.data());
+
+            // 상태별 카운트
+            let passed = 0;
+            let pending = 0;
+            let rejected = 0;
+            let reviewing = 0;
+            let thisMonth = 0;
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            // 최근 7일 데이터
+            const last7Days: { [key: string]: number } = {};
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                last7Days[dateStr] = 0;
+            }
+
+            applications.forEach(app => {
+                // 상태별 카운트
+                if (app.status === '합격') passed++;
+                else if (app.status === '보류') pending++;
+                else if (app.status === '불합격') rejected++;
+                else if (app.status === '검토중') reviewing++;
+
+                // 이번 달 지원자
+                if (app.appliedAt) {
+                    const appliedDate = app.appliedAt.toDate ? app.appliedAt.toDate() : new Date(app.appliedAt);
+                    if (appliedDate.getMonth() === currentMonth && appliedDate.getFullYear() === currentYear) {
+                        thisMonth++;
+                    }
+
+                    // 최근 7일 데이터
+                    const dateStr = appliedDate.toISOString().split('T')[0];
+                    if (last7Days.hasOwnProperty(dateStr)) {
+                        last7Days[dateStr]++;
+                    }
+                }
+            });
+
+            setStats({
+                total: applications.length,
+                passed,
+                pending,
+                rejected,
+                reviewing,
+                thisMonth
+            });
+
+            // 차트 데이터 변환
+            const chartData = Object.keys(last7Days).map(date => ({
+                date,
+                count: last7Days[date]
+            }));
+            setDailyData(chartData);
+
+        } catch (error) {
+            console.error('통계 로딩 실패:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // SVG 경로 생성 (최근 7일 데이터 기반)
+    const generatePath = () => {
+        if (dailyData.length === 0) return "M0,130 L400,130";
+        
+        const maxCount = Math.max(...dailyData.map(d => d.count), 1);
+        const points = dailyData.map((d, i) => {
+            const x = (i / (dailyData.length - 1)) * 400;
+            const y = 150 - (d.count / maxCount) * 120; // 150은 최하단, 30은 최상단
+            return { x, y };
+        });
+
+        // Smooth curve using quadratic Bezier
+        let path = `M${points[0].x},${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const cpX = (prev.x + curr.x) / 2;
+            path += ` Q${cpX},${prev.y} ${curr.x},${curr.y}`;
+        }
+        return path;
+    };
+
+    const mainPath = generatePath();
+    const areaPath = mainPath + " V150 H0 Z";
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500">대시보드 로딩 중...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
     <div className="space-y-8 max-w-[1200px] mx-auto pb-10">
         <div className="flex justify-between items-end">
             <div>
@@ -16,65 +164,6 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => (
             <button onClick={() => onNavigate('chat')} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/25 hover:bg-blue-700 transition-all flex items-center gap-2 active:scale-95">
                 <Plus size={18} strokeWidth={3} /> 새 JD 만들기
             </button>
-        </div>
-
-        {/* Profile Card */}
-        <div className="bg-white p-7 rounded-3xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2.5 text-base">
-                    <Users size={18} className="text-blue-600 fill-blue-600"/> 내 프로필
-                </h3>
-                <button className="text-[11px] font-bold bg-[#111827] text-white px-3.5 py-1.5 rounded-full hover:bg-black transition-colors">변경사항 저장</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-5">
-                    <div>
-                        <label className="text-[11px] font-bold text-gray-400 mb-1.5 block tracking-wide">이름</label>
-                        <input type="text" value="이름" readOnly className="w-full h-11 px-3 bg-white border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 focus:outline-none focus:border-blue-500 transition-colors" />
-                    </div>
-                    <div>
-                        <label className="text-[11px] font-bold text-gray-400 mb-1.5 block tracking-wide">직책/소속</label>
-                        <input type="text" placeholder="원아더 이름을 입력해주세요" className="w-full h-11 px-3 bg-white border border-gray-200 rounded-lg text-[13px] font-medium placeholder:text-gray-300 focus:outline-none focus:border-blue-500 transition-colors" />
-                    </div>
-                    <div className="bg-blue-50/80 h-11 px-3 rounded-lg flex items-center text-[12px] font-medium text-blue-600 truncate border border-blue-100">guest@winnow.ai</div>
-                </div>
-                
-                <div className="space-y-3">
-                     <label className="text-[11px] font-bold text-gray-400 mb-1.5 block tracking-wide">보유 스킬</label>
-                     <div className="flex flex-wrap gap-2">
-                         {['채용 전략', '인터뷰', 'HR 데이터 분석'].map(skill => (
-                             <span key={skill} className="bg-white h-9 px-3 rounded-lg text-[12px] font-medium text-gray-600 border border-gray-200 flex items-center gap-1.5 hover:border-blue-300 transition-colors cursor-default">
-                                {skill} <X size={12} className="text-gray-300 cursor-pointer hover:text-red-500"/>
-                             </span>
-                         ))}
-                         <button className="h-9 px-3 rounded-lg text-[12px] font-medium text-gray-400 border border-dashed border-gray-300 hover:border-blue-400 hover:text-blue-500 transition-all bg-gray-50/50">
-                            + 추가
-                         </button>
-                     </div>
-                     <div className="pt-4">
-                        <label className="text-[11px] font-bold text-gray-400 mb-1.5 block tracking-wide">한줄 소개</label>
-                         <textarea className="w-full h-[88px] p-3 bg-white border border-gray-200 rounded-lg text-[13px] resize-none focus:outline-none focus:border-blue-500 transition-colors"></textarea>
-                     </div>
-                </div>
-
-                <div>
-                    <label className="text-[11px] font-bold text-gray-400 mb-2 block tracking-wide">이력서 관리</label>
-                    <div className="border border-gray-200 rounded-xl p-4 flex items-center justify-between mb-3 bg-white hover:border-blue-200 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-50 text-red-500 rounded-lg flex items-center justify-center"><FileText size={20}/></div>
-                            <div>
-                                <div className="text-[13px] font-bold text-gray-800">kim_recruiter_resume.pdf</div>
-                                <div className="text-[11px] text-gray-400 mt-0.5">4.5 MB • 2024.10.20 업데이트</div>
-                            </div>
-                        </div>
-                        <button className="text-gray-300 hover:text-gray-500"><X size={16}/></button>
-                    </div>
-                    <button className="w-full h-12 border border-dashed border-gray-300 text-gray-500 rounded-xl text-[13px] font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-400 transition-all">
-                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center"><Plus size={12}/></div>
-                        새 이력서 업로드
-                    </button>
-                </div>
-            </div>
         </div>
 
         {/* Dashboard Stats */}
@@ -106,38 +195,128 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => (
         {/* Active Jobs List */}
         <div>
             <div className="flex justify-between items-center mb-5">
-                <h3 className="font-bold text-lg text-gray-800">진행 중인 채용 공고</h3>
-                <button className="text-[12px] text-gray-500 flex items-center gap-1 font-medium hover:text-blue-600 transition-colors">전체보기 <ChevronRight size={14}/></button>
+                <h3 className="font-bold text-lg text-gray-800">지원자 현황</h3>
+                <button 
+                    onClick={() => onNavigate('applicants')}
+                    className="text-[12px] text-gray-500 flex items-center gap-1 font-medium hover:text-blue-600 transition-colors"
+                >
+                    전체보기 <ChevronRight size={14}/>
+                </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {MOCK_JOBS.map((job) => (
-                    <div key={job.id} onClick={() => onNavigate('jd-detail')} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-300 group cursor-pointer flex flex-col h-full">
-                        <div className="h-40 w-full relative overflow-hidden">
-                            <img src={job.img} alt={job.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
-                            <div className="absolute top-3 left-3">
-                                <Badge type={job.status} text={job.status} />
+
+            {/* Analytics Section */}
+            <div className="space-y-6">
+                {/* Graph and Charts */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Graph Card */}
+                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="font-bold text-lg text-gray-800">총 지원자 추이</h3>
+                            <div className="text-[12px] font-bold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-gray-100">
+                                최근 7일 <ChevronRight size={14}/>
                             </div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                        <div className="p-5 flex flex-col flex-1">
-                            <div className="text-[11px] font-bold text-gray-400 mb-1.5 uppercase tracking-wide">{job.team} · {job.location}</div>
-                            <h4 className="font-bold text-[15px] text-gray-900 mb-3 leading-snug line-clamp-2">{job.title}</h4>
+                        <div className="h-[220px] w-full relative">
+                            {/* SVG Wave Graph */}
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 400 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="gradientArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#818CF8" stopOpacity="0.2"/>
+                                        <stop offset="100%" stopColor="#818CF8" stopOpacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                {/* Grid lines */}
+                                <line x1="0" y1="150" x2="400" y2="150" stroke="#F3F4F6" strokeWidth="1" />
+                                <line x1="0" y1="100" x2="400" y2="100" stroke="#F3F4F6" strokeWidth="1" />
+                                <line x1="0" y1="50" x2="400" y2="50" stroke="#F3F4F6" strokeWidth="1" />
+                                
+                                {/* Main Line */}
+                                <path d={mainPath} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round"/>
+                                <path d={areaPath} fill="url(#gradientArea)" stroke="none"/>
+                            </svg>
                             
-                            <div className="flex gap-1.5 mb-auto">
-                                <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">{job.dday}</span>
-                                <span className="text-[10px] font-bold bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded border border-gray-100">지원자 {job.applicants}명</span>
-                            </div>
-                            
-                            <div className="mt-5 pt-4 border-t border-gray-50 flex justify-between items-center text-[12px] font-medium text-gray-400">
-                                <div className="flex items-center gap-1 text-yellow-500 font-bold">
-                                    ★ 4.8
-                                </div>
-                                <span className="text-gray-900 font-bold">{job.salary.split(' ')[0]} <span className="text-gray-400 font-normal">부터</span></span>
+                            {/* Floating Tooltip */}
+                            <div className="absolute top-[10%] left-[65%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] px-4 py-2.5 rounded-xl border border-gray-100 text-center animate-bounce duration-[2000ms]">
+                                <div className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">This Month</div>
+                                <div className="font-extrabold text-xl text-gray-900 leading-none">{stats.thisMonth} <span className="text-[10px] font-medium text-gray-400">명</span></div>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-100 rotate-45"></div>
                             </div>
                         </div>
                     </div>
-                ))}
+
+                    {/* Donut Charts */}
+                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-around">
+                        {/* Gender Chart */}
+                        <div className="text-center">
+                            <div className="text-[13px] font-bold mb-6 text-gray-600">성비</div>
+                            <div className="relative w-36 h-36 mx-auto">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#EEF2FF" strokeWidth="16" strokeLinecap="round" />
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#6366F1" strokeWidth="16" strokeDasharray="350" strokeDashoffset="120" strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span className="text-[18px] font-extrabold text-gray-900">-</span>
+                                    <span className="text-[10px] text-gray-400 font-medium">정보 없음</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-center gap-4 mt-6">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">남성 -</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-100"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">여성 -</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Grade Chart */}
+                        <div className="text-center">
+                            <div className="text-[13px] font-bold mb-6 text-gray-600">경력 분포</div>
+                            <div className="relative w-36 h-36 mx-auto">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#F3E8FF" strokeWidth="16" strokeLinecap="round" />
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#8B5CF6" strokeWidth="16" strokeDasharray="350" strokeDashoffset="80" strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span className="text-[18px] font-extrabold text-gray-900">-</span>
+                                    <span className="text-[10px] text-gray-400 font-medium">정보 없음</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-center gap-4 mt-6">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">5년+ -</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-violet-100"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">주니어 -</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Cards - Colored */}
+                <div>
+                    <h3 className="font-bold text-lg text-gray-800 mb-5">채용 진행 현황</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                        {[
+                            { label: '합격', count: stats.passed, bg: 'bg-[#4ADE80]', text: 'text-white' },
+                            { label: '보류', count: stats.pending, bg: 'bg-[#FDE047]', text: 'text-yellow-800' },
+                            { label: '불합격', count: stats.rejected, bg: 'bg-[#FCA5A5]', text: 'text-white' },
+                            { label: '검토중', count: stats.reviewing, bg: 'bg-[#C4B5FD]', text: 'text-white' }
+                        ].map(status => (
+                            <div key={status.label} className={`h-[120px] p-6 rounded-2xl ${status.bg} shadow-sm transition-all hover:scale-105 cursor-pointer flex flex-col justify-between`}>
+                                <div className={`font-bold text-lg ${status.text}`}>{status.label}</div>
+                                <div className={`text-3xl font-extrabold ${status.text}`}>{status.count} <span className="text-sm font-normal opacity-80">명</span></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-);
+    );
+};

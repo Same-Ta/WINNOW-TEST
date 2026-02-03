@@ -51,7 +51,7 @@ const App = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentPage]);
 
   // URL 해시를 통한 공개 링크 처리
   useEffect(() => {

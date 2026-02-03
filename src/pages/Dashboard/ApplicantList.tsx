@@ -10,8 +10,8 @@ interface Application {
     applicantPhone?: string;
     applicantGender?: string;
     jdTitle: string;
-    requirementAnswers?: Array<{ question: string; answer: string }>;
-    preferredAnswers?: Array<{ question: string; answer: string }>;
+    requirementAnswers?: Array<{ question: string; checked: boolean; detail: string }>;
+    preferredAnswers?: Array<{ question: string; checked: boolean; detail: string }>;
     appliedAt: any;
     status: string;
 }
@@ -30,25 +30,57 @@ export const ApplicantList = () => {
         try {
             const currentUser = auth.currentUser;
             if (!currentUser) {
+                console.log('로그인된 사용자가 없습니다.');
                 setLoading(false);
                 return;
             }
 
-            const applicationsQuery = query(
-                collection(db, 'applications'),
-                where('recruiterId', '==', currentUser.uid),
-                orderBy('appliedAt', 'desc')
-            );
+            console.log('지원서 불러오는 중...', currentUser.uid);
 
-            const snapshot = await getDocs(applicationsQuery);
-            const applicationsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Application[];
+            try {
+                // orderBy와 함께 쿼리 시도
+                const applicationsQuery = query(
+                    collection(db, 'applications'),
+                    where('recruiterId', '==', currentUser.uid),
+                    orderBy('appliedAt', 'desc')
+                );
 
-            setApplications(applicationsData);
+                const snapshot = await getDocs(applicationsQuery);
+                const applicationsData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as Application[];
+
+                console.log('불러온 지원서:', applicationsData.length, '건');
+                setApplications(applicationsData);
+            } catch (indexError: any) {
+                // 인덱스 에러 발생 시 orderBy 없이 재시도
+                console.log('인덱스 에러 발생, orderBy 없이 재시도:', indexError.message);
+                
+                const applicationsQuery = query(
+                    collection(db, 'applications'),
+                    where('recruiterId', '==', currentUser.uid)
+                );
+
+                const snapshot = await getDocs(applicationsQuery);
+                const applicationsData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as Application[];
+
+                // 클라이언트 측에서 정렬
+                applicationsData.sort((a, b) => {
+                    const dateA = a.appliedAt?.toDate ? a.appliedAt.toDate().getTime() : 0;
+                    const dateB = b.appliedAt?.toDate ? b.appliedAt.toDate().getTime() : 0;
+                    return dateB - dateA;
+                });
+
+                console.log('불러온 지원서 (정렬됨):', applicationsData.length, '건');
+                setApplications(applicationsData);
+            }
         } catch (error) {
             console.error('지원서 로딩 실패:', error);
+            alert('지원서를 불러오는 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
         }
@@ -187,14 +219,28 @@ export const ApplicantList = () => {
                                              if (application.requirementAnswers && application.requirementAnswers.length > 0) {
                                                  detailText += `\n[자격 요건]\n`;
                                                  application.requirementAnswers.forEach(a => {
-                                                     detailText += `- ${a.question}: ${a.answer === 'Y' ? '✓ 충족' : '✗ 미충족'}\n`;
+                                                     if (a.checked) {
+                                                         detailText += `✓ ${a.question}\n`;
+                                                         if (a.detail) {
+                                                             detailText += `  → ${a.detail}\n`;
+                                                         }
+                                                     } else {
+                                                         detailText += `✗ ${a.question}\n`;
+                                                     }
                                                  });
                                              }
                                              
                                              if (application.preferredAnswers && application.preferredAnswers.length > 0) {
                                                  detailText += `\n[우대 사항]\n`;
                                                  application.preferredAnswers.forEach(a => {
-                                                     detailText += `- ${a.question}: ${a.answer === 'Y' ? '✓ 충족' : '✗ 미충족'}\n`;
+                                                     if (a.checked) {
+                                                         detailText += `✓ ${a.question}\n`;
+                                                         if (a.detail) {
+                                                             detailText += `  → ${a.detail}\n`;
+                                                         }
+                                                     } else {
+                                                         detailText += `✗ ${a.question}\n`;
+                                                     }
                                                  });
                                              }
                                              

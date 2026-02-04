@@ -203,7 +203,6 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
             </button>
         </div>
 
-<<<<<<< HEAD
         {/* Profile Card */}
         <div className="bg-white p-7 rounded-3xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
             <div className="flex justify-between items-center mb-6">

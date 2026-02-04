@@ -341,41 +341,47 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
             // 2. 미리보기 업데이트: jdData가 있으면 기존 상태와 병합
             if (response.jdData && typeof response.jdData === 'object') {
                 const newJD = {
-                    title: response.jdData.title || currentJD.title,
-                    companyName: response.jdData.companyName || currentJD.companyName,
-                    teamName: response.jdData.teamName || currentJD.teamName,
-                    location: response.jdData.location || currentJD.location,
-                    scale: response.jdData.scale || currentJD.scale,
-                    vision: response.jdData.vision || currentJD.vision,
-                    mission: response.jdData.mission || currentJD.mission,
+                    title: response.jdData.title || currentJD.title || '',
+                    jobRole: response.jdData.jobRole || currentJD.jobRole || '',
+                    company: response.jdData.company || currentJD.company || '',
+                    companyName: response.jdData.companyName || currentJD.companyName || '',
+                    teamName: response.jdData.teamName || currentJD.teamName || '',
+                    location: response.jdData.location || currentJD.location || '',
+                    scale: response.jdData.scale || currentJD.scale || '',
+                    vision: response.jdData.vision || currentJD.vision || '',
+                    mission: response.jdData.mission || currentJD.mission || '',
                     techStacks: (response.jdData.techStacks && response.jdData.techStacks.length > 0)
                         ? response.jdData.techStacks
-                        : currentJD.techStacks,
+                        : currentJD.techStacks || [],
                     responsibilities: (response.jdData.responsibilities && response.jdData.responsibilities.length > 0) 
                         ? response.jdData.responsibilities 
-                        : currentJD.responsibilities,
+                        : currentJD.responsibilities || [],
                     requirements: (response.jdData.requirements && response.jdData.requirements.length > 0) 
                         ? response.jdData.requirements 
-                        : currentJD.requirements,
+                        : currentJD.requirements || [],
                     preferred: (response.jdData.preferred && response.jdData.preferred.length > 0) 
                         ? response.jdData.preferred 
-                        : currentJD.preferred,
+                        : currentJD.preferred || [],
                     benefits: (response.jdData.benefits && response.jdData.benefits.length > 0) 
                         ? response.jdData.benefits 
-                        : currentJD.benefits
+                        : currentJD.benefits || []
                 };
                 
-                // 타이핑 애니메이션 적용
+                // 타이핑 애니메이션 적용 - 새로운 값이 있을 때만
                 if (response.jdData.title && response.jdData.title !== currentJD.title) {
                     typeText('title', response.jdData.title);
                 }
+                if (response.jdData.companyName && response.jdData.companyName !== currentJD.companyName) {
+                    typeText('companyName', response.jdData.companyName, 20);
+                }
                 if (response.jdData.vision && response.jdData.vision !== currentJD.vision) {
-                    typeText('vision', response.jdData.vision);
+                    typeText('vision', response.jdData.vision, 20);
                 }
                 if (response.jdData.mission && response.jdData.mission !== currentJD.mission) {
-                    typeText('mission', response.jdData.mission);
+                    typeText('mission', response.jdData.mission, 20);
                 }
                 
+                console.log('JD 업데이트:', newJD);
                 setCurrentJD(prev => ({ ...prev, ...newJD }));
             }
         } catch (error) {
@@ -392,18 +398,18 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
     };
 
     return (
-        <div className="flex h-full bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden max-w-[1200px] mx-auto" style={{ height: 'calc(100vh - 140px)'}}>
+        <div className="flex bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden w-full gap-1" style={{ height: 'calc(100% - 0px)', zoom: '0.75'}}>
             {/* Chat Area - Left */}
-            <div className="w-[380px] border-r border-gray-100 flex flex-col bg-[#F8FAFC]">
-                <div className="p-5 border-b border-gray-100 bg-white flex justify-between items-center h-[70px]">
-                    <div className="flex items-center gap-2.5 font-bold text-[15px] text-gray-800">
-                        <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md"><MessageSquare size={14} fill="white"/></div>
-                        JD 생성 매니저
+            <div className="w-[40%] flex flex-col bg-white rounded-l-2xl border border-gray-200 shadow-sm">
+                <div className="p-5 border-b-2 border-gray-200 bg-gradient-to-r from-blue-50 to-white flex justify-between items-center h-[70px]">
+                    <div className="flex items-center gap-2.5 font-bold text-[16px] text-gray-900">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md"><MessageSquare size={16} fill="white"/></div>
+                        채팅
                     </div>
                     <X size={18} className="text-gray-400 cursor-pointer hover:text-gray-600"/>
                 </div>
                 
-                <div className="flex-1 p-5 space-y-6 overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="flex-1 p-5 space-y-6 overflow-y-auto scrollbar-hide bg-[#F8FAFC]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {messages.map((msg, idx) => (
                         <div key={idx} className="flex gap-3">
                             {msg.role === 'ai' && (
@@ -459,12 +465,20 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
             </div>
 
             {/* Preview Area - Right */}
-            <div className="flex-1 bg-white flex relative">
+            <div className="flex-1 bg-white flex relative overflow-hidden rounded-r-2xl border border-gray-200 shadow-sm">
+                
+                {/* Preview Header */}
+                <div className="absolute top-0 left-0 right-0 h-[70px] bg-gradient-to-r from-white to-purple-50 border-b-2 border-gray-200 flex items-center px-6 z-10">
+                    <div className="flex items-center gap-2.5 font-bold text-[16px] text-gray-900">
+                        <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white shadow-md"><FileText size={16}/></div>
+                        미리보기
+                    </div>
+                </div>
                 
                 {/* Left Profile Section */}
-                <div className="w-[240px] border-r border-gray-100 flex flex-col bg-[#FAFBFC] pt-16">
+                <div className="w-[240px] border-r border-gray-100 flex flex-col bg-[#FAFBFC] pt-[70px] overflow-y-auto mt-[70px]">
                     {/* Profile Image */}
-                    <div className="px-6 flex flex-col items-center">
+                    <div className="px-6 flex flex-col items-center pt-8">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-4 shadow-lg overflow-hidden">
                             <img 
                                 src={selectedImage}
@@ -542,8 +556,8 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 </div>
 
                 {/* Right Content Section */}
-                <div className="flex-1 flex flex-col">
-                    <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div className="flex-1 flex flex-col overflow-hidden mt-[70px]">
+                    <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white flex-shrink-0">
                         <h3 className="font-bold text-lg text-gray-800">실시간 미리보기</h3>
                         <div className="flex gap-2">
                             {!isEditMode ? (
@@ -561,9 +575,9 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                         </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto p-8 space-y-8">
                         {!currentJD.title && currentJD.responsibilities.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-10">
+                            <div className="h-full flex flex-col items-center justify-center text-center">
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                                     <FileText size={32} className="text-gray-300"/>
                                 </div>
@@ -571,7 +585,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                 <p className="text-[13px] text-gray-400 max-w-xs leading-relaxed">왼쪽 채팅창에서 AI 매니저와 대화를 나누면, 이곳에 채용 공고가 실시간으로 완성됩니다.</p>
                             </div>
                         ) : (
-                            <div className="p-8 space-y-8">
+                            <>
                                 {/* 공고 제목 */}
                                 <div>
                                     <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -770,7 +784,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                 <div className="text-right pt-4">
                                     <p className="text-[11px] font-bold text-gray-400">WINNOW Recruiting Team</p>
                                 </div>
-                            </div>
+                            </>
                         )}
                     </div>
                 </div>

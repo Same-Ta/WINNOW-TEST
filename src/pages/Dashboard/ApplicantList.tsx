@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Filter, Download, MoreHorizontal, X, Sparkles, FileText } from 'lucide-react';
 import { db, auth } from '@/config/firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
 
 interface Application {
     id: string;
@@ -173,6 +174,72 @@ export const ApplicantList = () => {
         setAiSummary('');
     };
 
+    // 엑셀 다운로드 함수
+    const handleExcelDownload = () => {
+        try {
+            // 엑셀로 변환할 데이터 준비
+            const excelData = filteredApplications.map((app, index) => {
+                // 자격요건 답변 정리
+                const requirementAnswers = app.requirementAnswers?.map(ans => 
+                    `${ans.question}: ${ans.answer === 'Y' ? '충족' : '미충족'}`
+                ).join('\n') || '-';
+
+                // 우대사항 답변 정리
+                const preferredAnswers = app.preferredAnswers?.map(ans => 
+                    `${ans.question}: ${ans.answer === 'Y' ? '충족' : '미충족'}`
+                ).join('\n') || '-';
+
+                return {
+                    '번호': index + 1,
+                    '지원자명': app.applicantName || '-',
+                    '이메일': app.applicantEmail || '-',
+                    '전화번호': app.applicantPhone || '-',
+                    '성별': app.applicantGender || '-',
+                    '지원 포지션': app.jdTitle || '-',
+                    '지원일': formatDate(app.appliedAt),
+                    '상태': app.status || '검토중',
+                    '자격요건': requirementAnswers,
+                    '우대사항': preferredAnswers
+                };
+            });
+
+            // 워크시트 생성
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // 열 너비 설정
+            const columnWidths = [
+                { wch: 5 },   // 번호
+                { wch: 12 },  // 지원자명
+                { wch: 25 },  // 이메일
+                { wch: 15 },  // 전화번호
+                { wch: 8 },   // 성별
+                { wch: 30 },  // 지원 포지션
+                { wch: 12 },  // 지원일
+                { wch: 10 },  // 상태
+                { wch: 50 },  // 자격요건
+                { wch: 50 }   // 우대사항
+            ];
+            worksheet['!cols'] = columnWidths;
+
+            // 워크북 생성
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, '지원자 목록');
+
+            // 파일명 생성 (현재 날짜 포함)
+            const today = new Date();
+            const dateString = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+            const fileName = `지원자_목록_${dateString}.xlsx`;
+
+            // 파일 다운로드
+            XLSX.writeFile(workbook, fileName);
+
+            console.log('엑셀 다운로드 완료:', fileName);
+        } catch (error) {
+            console.error('엑셀 다운로드 실패:', error);
+            alert('엑셀 파일 생성 중 오류가 발생했습니다.');
+        }
+    };
+
     const filteredApplications = statusFilter === 'all'
         ? applications
         : applications.filter(app => app.status === statusFilter);
@@ -231,8 +298,12 @@ export const ApplicantList = () => {
                      </div>
                  )}
                  
-                 <button className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-600 transition-colors"><Download size={16}/> 엑셀 다운로드</button>
-                 <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400"><MoreHorizontal size={18}/></button>
+                 <button 
+                     onClick={handleExcelDownload}
+                     className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs font-medium text-gray-600 transition-colors"
+                 >
+                     <Download size={16}/> 엑셀 다운로드
+                 </button>
              </div>
          </div>
          <div className="flex-1 overflow-auto">

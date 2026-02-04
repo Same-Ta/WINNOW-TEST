@@ -152,7 +152,7 @@ const App = () => {
 
   const renderContent = () => {
     switch(currentPage) {
-        case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />;
+        case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} onNavigateToJD={handleNavigateToJD} />;
         case 'my-jds': return <MyJDsPage onNavigate={setCurrentPage} onNavigateToJD={handleNavigateToJD} />;
         case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={setCurrentPage} />;
         case 'applicants': 
@@ -233,12 +233,12 @@ const App = () => {
 
   // Dashboard Layout
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex" style={{ fontFamily: FONTS.sans }}>
+    <div className="h-screen bg-[#F8FAFC] flex overflow-hidden" style={{ fontFamily: FONTS.sans }}>
       <FunnelCSS />
       
       {/* Sidebar */}
-      <aside className="w-[260px] bg-white border-r border-gray-100 fixed h-full z-20 hidden md:flex flex-col shadow-[2px_0_20px_rgba(0,0,0,0.02)]">
-        <div className="px-6 h-20 flex items-center gap-2.5 mb-2">
+      <aside className="w-[260px] bg-white border-r border-gray-100 h-screen z-20 hidden md:flex flex-col shadow-[2px_0_20px_rgba(0,0,0,0.02)]">
+        <div className="px-6 h-20 flex items-center gap-2.5 mb-2 flex-shrink-0">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-blue-500/20">W</div>
             <span className="font-extrabold text-[19px] text-gray-900 tracking-tight">WINNOW</span>
         </div>
@@ -288,8 +288,8 @@ const App = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-[260px] min-w-0 bg-[#F8FAFC]">
-          <div className="p-8 pb-20 h-screen overflow-y-auto scroll-smooth">
+      <main className="flex-1 min-w-0 bg-[#F8FAFC] h-screen overflow-hidden">
+          <div className={currentPage === 'chat' ? 'h-full w-full p-4' : 'p-8 pb-20 h-full overflow-y-auto scroll-smooth'}>
               {renderContent()}
           </div>
       </main>

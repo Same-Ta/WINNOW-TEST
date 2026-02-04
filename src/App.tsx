@@ -164,7 +164,7 @@ const App = () => {
           );
         case 'chat': return <ChatInterface onNavigate={setCurrentPage} />;
         case 'settings': return <AccountSettings />;
-        default: return <DashboardHome onNavigate={setCurrentPage} />;
+        default: return <DashboardHome onNavigate={setCurrentPage} onNavigateToJD={(jdId) => console.log('Navigate to JD:', jdId)} />;
     }
   };
 

@@ -42,7 +42,6 @@ interface RecentApplicant {
 
 export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps) => {
     const [userName, setUserName] = useState('채용 담당자');
-    const [userEmail, setUserEmail] = useState('');
     const [activeJDs, setActiveJDs] = useState<JD[]>([]);
     const [stats, setStats] = useState<StatusStats>({
         total: 0,
@@ -61,7 +60,6 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
         if (currentUser) {
             const name = currentUser.displayName || currentUser.email?.split('@')[0] || '채용 담당자';
             setUserName(name);
-            setUserEmail(currentUser.email || '');
             
             fetchActiveJDs(currentUser.uid);
             fetchAnalytics();

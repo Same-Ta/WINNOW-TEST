@@ -400,7 +400,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
     return (
         <div className="flex bg-gray-100 rounded-2xl border border-gray-200 shadow-xl overflow-hidden w-full gap-3" style={{ height: 'calc(100% - 0px)', zoom: '0.75'}}>
             {/* Chat Area - Left */}
-            <div className="w-[40%] flex flex-col bg-white rounded-l-2xl border border-gray-200 shadow-sm">
+            <div className="w-[35%] flex flex-col bg-white rounded-l-2xl border border-gray-200 shadow-sm">
                 <div className="p-5 border-b border-gray-200 bg-white flex justify-between items-center h-[70px]">
                     <div className="flex items-center gap-2.5 font-bold text-[15px] text-gray-800">
                         <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm"><MessageSquare size={14} fill="white"/></div>
@@ -467,15 +467,8 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
             {/* Preview Area - Right */}
             <div className="flex-1 bg-white flex relative overflow-hidden rounded-r-2xl border border-gray-200 shadow-sm">
                 
-                {/* Preview Header */}
-                <div className="absolute top-0 left-0 right-0 h-[70px] bg-white border-b border-gray-200 flex items-center px-6 z-10">
-                    <div className="flex items-center gap-2.5 font-bold text-[15px] text-gray-800">
-                        실시간 미리보기
-                    </div>
-                </div>
-                
                 {/* Left Profile Section */}
-                <div className="w-[240px] border-r border-gray-100 flex flex-col bg-[#FAFBFC] pt-[70px] overflow-y-auto mt-[70px]">
+                <div className="w-[240px] border-r border-gray-100 flex flex-col bg-[#FAFBFC] overflow-y-auto">
                     {/* Profile Image */}
                     <div className="px-6 flex flex-col items-center pt-8">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-4 shadow-lg overflow-hidden">
@@ -555,26 +548,9 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 </div>
 
                 {/* Right Content Section */}
-                <div className="flex-1 flex flex-col overflow-hidden mt-[70px]">
-                    <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white flex-shrink-0">
-                        <h3 className="font-bold text-lg text-gray-800">실시간 미리보기</h3>
-                        <div className="flex gap-2">
-                            {!isEditMode ? (
-                                <>
-                                    <button onClick={startEdit} className="px-4 py-2 border border-blue-500 text-blue-600 rounded-lg text-[12px] font-bold hover:bg-blue-50 transition-colors">편집</button>
-                                    <button onClick={saveDraft} className="px-4 py-2 border border-gray-200 rounded-lg text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-colors">임시 저장</button>
-                                    <button onClick={publishJob} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">공고 게시</button>
-                                </>
-                            ) : (
-                                <>
-                                    <button onClick={cancelEdit} className="px-4 py-2 border border-gray-200 rounded-lg text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition-colors">취소</button>
-                                    <button onClick={saveEdit} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[12px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">저장</button>
-                                </>
-                            )}
-                        </div>
-                    </div>
+                <div className="flex-1 flex flex-col overflow-hidden">
                     
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                    <div className="flex-1 overflow-y-auto p-8 space-y-8 pt-8">
                         {!currentJD.title && currentJD.responsibilities.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-center">
                                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
@@ -770,13 +746,19 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                 </div>
 
                                 {/* Footer */}
-                                <div className="pt-6 border-t border-gray-100 flex justify-end items-center">
-                                    <button className="px-6 py-3 bg-blue-600 text-white rounded-lg text-[14px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all flex items-center gap-2">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                        일괄 공유하기
-                                    </button>
+                                <div className="pt-6 border-t border-gray-100 flex justify-end items-center gap-2">
+                                    {!isEditMode ? (
+                                        <>
+                                            <button onClick={startEdit} className="px-4 py-2.5 border border-blue-500 text-blue-600 rounded-lg text-[13px] font-bold hover:bg-blue-50 transition-colors">편집</button>
+                                            <button onClick={saveDraft} className="px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-600 hover:bg-gray-50 transition-colors">임시 저장</button>
+                                            <button onClick={publishJob} className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">공고 게시</button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button onClick={cancelEdit} className="px-4 py-2.5 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-600 hover:bg-gray-50 transition-colors">취소</button>
+                                            <button onClick={saveEdit} className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">저장</button>
+                                        </>
+                                    )}
                                 </div>
 
                                 {/* Branding */}

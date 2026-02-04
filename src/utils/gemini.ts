@@ -38,16 +38,16 @@ export const generateJD = async (message: string, chatHistory: any[]) => {
 - "열정 가득한 분" 같은 추상적인 표현 대신 실무적인 행동 양식으로 변환해서 작성해라.
 - 대화를 통해 얻은 정보는 즉시 jdData에 반영하여 실시간 미리보기가 업데이트되도록 할 것.
 
-응답은 반드시 아래 JSON 구조로만 작성해. 마크다운, 코드 블록, 인사말, 추가 설명 절대 금지.
+**중요: 절대 JSON 객체를 문자열로 감싸지 마라. 순수한 JSON 객체만 반환해라.**
 
-JSON 구조:
+반환 형식 (정확히 이 형식으로만 응답):
 {
-  "aiResponse": "사용자에게 건네는 말 (질문이나 답변)",
+  "aiResponse": "사용자에게 건네는 질문이나 답변 (일반 텍스트)",
   "jdData": {
-    "title": "동아리명 또는 포지션명 (예: '디자인 동아리 PIXEL 신입 회원 모집')",
+    "title": "동아리명 또는 포지션명",
     "companyName": "동아리명 또는 조직명",
     "teamName": "팀 또는 동아리 이름",
-    "jobRole": "모집 분야 (예: '디자이너', '개발자', '기획자')",
+    "jobRole": "모집 분야",
     "location": "활동 장소 (예: '서울 강남구', '온라인', '연세대학교')",
     "scale": "동아리 규모 (예: '15-20명', '소규모 스터디')",
     "vision": "동아리의 비전 (예: 'UX/UI 디자인으로 세상을 바꾸는 청년 커뮤니티')",
@@ -91,10 +91,12 @@ JSON 구조:
     let responseText = data.candidates[0].content.parts[0].text;
     console.log("Gemini 원본 응답:", responseText);
 
-    // 응답 정제 (Cleanup): 마크다운 제거
+    // 응답 정제 (Cleanup): 마크다운 및 불필요한 텍스트 제거
     responseText = responseText
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
+        .replace(/^[\s\S]*?(\{)/m, '$1')  // JSON 시작 전 모든 텍스트 제거
+        .replace(/(\})[\s\S]*$/m, '$1')   // JSON 종료 후 모든 텍스트 제거
         .trim();
 
     // 안전한 JSON 파싱
@@ -105,6 +107,20 @@ JSON 구조:
         if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             console.log("파싱 성공:", parsed);
+            
+            // aiResponse가 JSON 문자열인 경우 추가 파싱 시도
+            if (typeof parsed.aiResponse === 'string' && parsed.aiResponse.trim().startsWith('{')) {
+                try {
+                    const innerParsed = JSON.parse(parsed.aiResponse);
+                    if (innerParsed.aiResponse && innerParsed.jdData) {
+                        console.log("중첩 JSON 감지, 내부 파싱 성공:", innerParsed);
+                        return innerParsed;
+                    }
+                } catch (e) {
+                    // 내부 파싱 실패 시 원본 사용
+                }
+            }
+            
             return parsed;
         } else {
             throw new Error("JSON 패턴 없음");

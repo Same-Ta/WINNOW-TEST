@@ -1,15 +1,37 @@
 import { ChevronRight } from 'lucide-react';
 import { FONTS } from '@/constants/fonts';
+import { useState, useEffect } from 'react';
 
 interface LandingPageProps {
   onLogin: () => void;
 }
 
 export const LandingPage = ({ onLogin }: LandingPageProps) => {
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = (window.scrollY / totalHeight) * 100;
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white text-gray-900" style={{ fontFamily: FONTS.sans }}>
+    <div className="min-h-screen bg-white text-gray-900 overflow-y-auto scrollbar-hide" style={{ fontFamily: FONTS.sans }}>
+      {/* Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-gray-100 z-[60]">
+        <div 
+          className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300 ease-out"
+          style={{ width: `${scrollProgress}%` }}
+        ></div>
+      </div>
+
       {/* Header */}
-      <header className="fixed top-0 w-full bg-white/70 backdrop-blur-xl z-50 border-b border-gray-100/50">
+      <header className="fixed top-0 w-full bg-white/70 backdrop-blur-xl z-50 border-b border-gray-100/50 mt-1">
         <div className="max-w-[1200px] mx-auto px-6 h-[72px] flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer">
             <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-blue-500/30">W</div>

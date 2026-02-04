@@ -20,6 +20,7 @@ import { ApplicantAnalytics } from '@/pages/Dashboard/ApplicantAnalytics';
 import { ApplicantList } from '@/pages/Dashboard/ApplicantList';
 import { ChatInterface } from '@/pages/Dashboard/ChatInterface';
 import { MyJDsPage } from '@/pages/Dashboard/MyJDsPage';
+import { AccountSettings } from '@/pages/Dashboard/AccountSettings';
 import { auth } from '@/config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
@@ -59,8 +60,6 @@ const App = () => {
 
   // 초기 URL 확인
   const initialJdId = getJdIdFromUrl();
-  const [currentPageState] = useState(initialJdId ? 'jd-detail' : 'landing');
-  const [selectedJdIdState] = useState<string | undefined>(initialJdId || undefined);
 
   useEffect(() => {
     if (initialJdId && !selectedJdId) {
@@ -95,6 +94,8 @@ const App = () => {
       } else {
         console.log('로그인 되지 않은 상태');
         setIsLoggedIn(false);
+        setUserName('');
+        setUserEmail('');
         // JD 상세 페이지가 아닌 경우에만 landing으로 이동
         if (currentPage !== 'jd-detail' && currentPage !== 'login' && currentPage !== 'signup') {
           setCurrentPage('landing');
@@ -156,7 +157,6 @@ const App = () => {
         case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />;
         case 'my-jds': return <MyJDsPage onNavigate={setCurrentPage} onNavigateToJD={handleNavigateToJD} />;
         case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={setCurrentPage} />;
-        case 'analytics': return <ApplicantAnalytics />;
         case 'applicants': 
           return (
             <div className="space-y-4 max-w-[1200px] mx-auto">
@@ -165,6 +165,7 @@ const App = () => {
             </div>
           );
         case 'chat': return <ChatInterface onNavigate={setCurrentPage} />;
+        case 'settings': return <AccountSettings />;
         default: return <DashboardHome onNavigate={setCurrentPage} />;
     }
   };
@@ -259,12 +260,6 @@ const App = () => {
                 onClick={() => setCurrentPage('my-jds')} 
             />
             <SidebarItem 
-                icon={Users} 
-                label="지원자 현황" 
-                active={currentPage === 'analytics'} 
-                onClick={() => setCurrentPage('analytics')} 
-            />
-            <SidebarItem 
                 icon={CheckCircle2} 
                 label="지원자 관리" 
                 active={currentPage === 'applicants'} 
@@ -280,7 +275,7 @@ const App = () => {
 
         <div className="px-3 pb-6">
              <div className="text-[11px] font-bold text-gray-400 px-4 mb-2 uppercase tracking-wider">내 정보</div>
-             <SidebarItem icon={Settings} label="계정 설정" active={false} onClick={() => {}} />
+             <SidebarItem icon={Settings} label="계정 설정" active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')} />
              <div className="mt-4 px-4 pt-5 border-t border-gray-50">
                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-200">{userInitials}</div>

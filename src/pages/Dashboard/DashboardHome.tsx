@@ -1,7 +1,7 @@
 import { Plus, Users, FileText, ChevronRight, X } from 'lucide-react';
 import { Badge } from '@/components/common/Badge';
-import { auth, db } from '@/config/firebase';
 import { useState, useEffect } from 'react';
+import { db, auth } from '@/config/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface DashboardHomeProps {
@@ -17,22 +17,44 @@ interface JD {
   createdAt?: any;
 }
 
+interface StatusStats {
+    total: number;
+    passed: number;
+    pending: number;
+    rejected: number;
+    reviewing: number;
+    thisMonth: number;
+}
+
+interface DailyCount {
+    date: string;
+    count: number;
+}
+
 export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
     const [userName, setUserName] = useState('채용 담당자');
     const [userEmail, setUserEmail] = useState('');
     const [activeJDs, setActiveJDs] = useState<JD[]>([]);
+    const [stats, setStats] = useState<StatusStats>({
+        total: 0,
+        passed: 0,
+        pending: 0,
+        rejected: 0,
+        reviewing: 0,
+        thisMonth: 0
+    });
+    const [dailyData, setDailyData] = useState<DailyCount[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const currentUser = auth.currentUser;
         if (currentUser) {
-            // displayName이 있으면 사용, 없으면 이메일의 @ 앞부분 사용
             const name = currentUser.displayName || currentUser.email?.split('@')[0] || '채용 담당자';
             setUserName(name);
             setUserEmail(currentUser.email || '');
             
-            // 실제 JD 데이터 가져오기
             fetchActiveJDs(currentUser.uid);
+            fetchAnalytics();
         }
     }, []);
 
@@ -49,7 +71,6 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                 ...doc.data()
             })) as JD[];
 
-            // 최신순으로 정렬하고 최대 4개만
             const sortedJDs = jds.sort((a, b) => {
                 const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
                 const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
@@ -59,11 +80,117 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
             setActiveJDs(sortedJDs);
         } catch (error) {
             console.error('JD 로딩 실패:', error);
+        }
+    };
+
+    const fetchAnalytics = async () => {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                setLoading(false);
+                return;
+            }
+
+            const applicationsQuery = query(
+                collection(db, 'applications'),
+                where('recruiterId', '==', currentUser.uid)
+            );
+
+            const snapshot = await getDocs(applicationsQuery);
+            const applications = snapshot.docs.map(doc => doc.data());
+
+            let passed = 0;
+            let pending = 0;
+            let rejected = 0;
+            let reviewing = 0;
+            let thisMonth = 0;
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const last7Days: { [key: string]: number } = {};
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                last7Days[dateStr] = 0;
+            }
+
+            applications.forEach(app => {
+                if (app.status === '합격') passed++;
+                else if (app.status === '보류') pending++;
+                else if (app.status === '불합격') rejected++;
+                else if (app.status === '검토중') reviewing++;
+
+                if (app.appliedAt) {
+                    const appliedDate = app.appliedAt.toDate ? app.appliedAt.toDate() : new Date(app.appliedAt);
+                    if (appliedDate.getMonth() === currentMonth && appliedDate.getFullYear() === currentYear) {
+                        thisMonth++;
+                    }
+
+                    const dateStr = appliedDate.toISOString().split('T')[0];
+                    if (last7Days.hasOwnProperty(dateStr)) {
+                        last7Days[dateStr]++;
+                    }
+                }
+            });
+
+            setStats({
+                total: applications.length,
+                passed,
+                pending,
+                rejected,
+                reviewing,
+                thisMonth
+            });
+
+            const chartData = Object.keys(last7Days).map(date => ({
+                date,
+                count: last7Days[date]
+            }));
+            setDailyData(chartData);
+
+        } catch (error) {
+            console.error('통계 로딩 실패:', error);
         } finally {
             setLoading(false);
         }
     };
 
+    const generatePath = () => {
+        if (dailyData.length === 0) return "M0,130 L400,130";
+        
+        const maxCount = Math.max(...dailyData.map(d => d.count), 1);
+        const points = dailyData.map((d, i) => {
+            const x = (i / (dailyData.length - 1)) * 400;
+            const y = 150 - (d.count / maxCount) * 120;
+            return { x, y };
+        });
+
+        let path = `M${points[0].x},${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const cpX = (prev.x + curr.x) / 2;
+            path += ` Q${cpX},${prev.y} ${curr.x},${curr.y}`;
+        }
+        return path;
+    };
+
+    const mainPath = generatePath();
+    const areaPath = mainPath + " V150 H0 Z";
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500">대시보드 로딩 중...</p>
+                </div>
+            </div>
+        );
+    }
     return (
     <div className="space-y-8 max-w-[1200px] mx-auto pb-10">
         <div className="flex justify-between items-end">
@@ -76,6 +203,7 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
             </button>
         </div>
 
+<<<<<<< HEAD
         {/* Profile Card */}
         <div className="bg-white p-7 rounded-3xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
             <div className="flex justify-between items-center mb-6">
@@ -174,11 +302,7 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                 <h3 className="font-bold text-lg text-gray-800">진행 중인 채용 공고</h3>
                 <button onClick={() => onNavigate('my-jds')} className="text-[12px] text-gray-500 flex items-center gap-1 font-medium hover:text-blue-600 transition-colors">전체보기 <ChevronRight size={14}/></button>
             </div>
-            {loading ? (
-                <div className="flex items-center justify-center h-40">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-            ) : activeJDs.length === 0 ? (
+            {activeJDs.length === 0 ? (
                 <div className="bg-gray-50 rounded-2xl p-12 text-center border border-gray-100">
                     <FileText size={48} className="mx-auto mb-4 text-gray-300" />
                     <p className="text-gray-500 mb-2 font-medium">아직 생성된 채용 공고가 없습니다</p>
@@ -220,6 +344,131 @@ export const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                     ))}
                 </div>
             )}
+        </div>
+
+        {/* Analytics Section */}
+        <div>
+            <div className="flex justify-between items-center mb-5">
+                <h3 className="font-bold text-lg text-gray-800">지원자 현황</h3>
+                <button 
+                    onClick={() => onNavigate('applicants')}
+                    className="text-[12px] text-gray-500 flex items-center gap-1 font-medium hover:text-blue-600 transition-colors"
+                >
+                    전체보기 <ChevronRight size={14}/>
+                </button>
+            </div>
+
+            <div className="space-y-6">
+                {/* Graph and Charts */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Graph Card */}
+                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="font-bold text-lg text-gray-800">총 지원자 추이</h3>
+                            <div className="text-[12px] font-bold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-gray-100">
+                                최근 7일 <ChevronRight size={14}/>
+                            </div>
+                        </div>
+                        <div className="h-[220px] w-full relative">
+                            {/* SVG Wave Graph */}
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 400 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="gradientArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#818CF8" stopOpacity="0.2"/>
+                                        <stop offset="100%" stopColor="#818CF8" stopOpacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                {/* Grid lines */}
+                                <line x1="0" y1="150" x2="400" y2="150" stroke="#F3F4F6" strokeWidth="1" />
+                                <line x1="0" y1="100" x2="400" y2="100" stroke="#F3F4F6" strokeWidth="1" />
+                                <line x1="0" y1="50" x2="400" y2="50" stroke="#F3F4F6" strokeWidth="1" />
+                                
+                                {/* Main Line */}
+                                <path d={mainPath} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round"/>
+                                <path d={areaPath} fill="url(#gradientArea)" stroke="none"/>
+                            </svg>
+                            
+                            {/* Floating Tooltip */}
+                            <div className="absolute top-[10%] left-[65%] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] px-4 py-2.5 rounded-xl border border-gray-100 text-center animate-bounce duration-[2000ms]">
+                                <div className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">This Month</div>
+                                <div className="font-extrabold text-xl text-gray-900 leading-none">{stats.thisMonth} <span className="text-[10px] font-medium text-gray-400">명</span></div>
+                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-gray-100 rotate-45"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Donut Charts */}
+                    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-around">
+                        {/* Gender Chart */}
+                        <div className="text-center">
+                            <div className="text-[13px] font-bold mb-6 text-gray-600">성비</div>
+                            <div className="relative w-36 h-36 mx-auto">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#EEF2FF" strokeWidth="16" strokeLinecap="round" />
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#6366F1" strokeWidth="16" strokeDasharray="350" strokeDashoffset="120" strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span className="text-[18px] font-extrabold text-gray-900">-</span>
+                                    <span className="text-[10px] text-gray-400 font-medium">정보 없음</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-center gap-4 mt-6">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">남성 -</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-100"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">여성 -</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Grade Chart */}
+                        <div className="text-center">
+                            <div className="text-[13px] font-bold mb-6 text-gray-600">경력 분포</div>
+                            <div className="relative w-36 h-36 mx-auto">
+                                <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#F3E8FF" strokeWidth="16" strokeLinecap="round" />
+                                    <circle cx="72" cy="72" r="56" fill="transparent" stroke="#8B5CF6" strokeWidth="16" strokeDasharray="350" strokeDashoffset="80" strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                    <span className="text-[18px] font-extrabold text-gray-900">-</span>
+                                    <span className="text-[10px] text-gray-400 font-medium">정보 없음</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-center gap-4 mt-6">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-violet-500"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">5년+ -</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-violet-100"></div>
+                                    <span className="text-[11px] font-medium text-gray-500">주니어 -</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Cards - Colored */}
+                <div>
+                    <h3 className="font-bold text-lg text-gray-800 mb-5">채용 진행 현황</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                        {[
+                            { label: '합격', count: stats.passed, bg: 'bg-[#4ADE80]', text: 'text-white' },
+                            { label: '보류', count: stats.pending, bg: 'bg-[#FDE047]', text: 'text-yellow-800' },
+                            { label: '불합격', count: stats.rejected, bg: 'bg-[#FCA5A5]', text: 'text-white' },
+                            { label: '검토중', count: stats.reviewing, bg: 'bg-[#C4B5FD]', text: 'text-white' }
+                        ].map(status => (
+                            <div key={status.label} className={`h-[120px] p-6 rounded-2xl ${status.bg} shadow-sm transition-all hover:scale-105 cursor-pointer flex flex-col justify-between`}>
+                                <div className={`font-bold text-lg ${status.text}`}>{status.label}</div>
+                                <div className={`text-3xl font-extrabold ${status.text}`}>{status.count} <span className="text-sm font-normal opacity-80">명</span></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     );

@@ -17,6 +17,13 @@ interface DailyCount {
     count: number;
 }
 
+interface Application {
+    id: string;
+    status: string;
+    appliedAt: any;
+    [key: string]: any;
+}
+
 export const ApplicantAnalytics = () => {
     const [stats, setStats] = useState<StatusStats>({
         total: 0,
@@ -42,7 +49,7 @@ export const ApplicantAnalytics = () => {
             }
 
             // 백엔드 API로 지원서 목록 가져오기
-            const applications = await applicationAPI.getAll();
+            const applications: Application[] = await applicationAPI.getAll();
 
             // 상태별 카운트
             let passed = 0;

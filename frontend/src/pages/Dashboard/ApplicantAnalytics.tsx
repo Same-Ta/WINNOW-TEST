@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useApplicantStats, generateChartPath } from '@/hooks/useApplicantStats';
 

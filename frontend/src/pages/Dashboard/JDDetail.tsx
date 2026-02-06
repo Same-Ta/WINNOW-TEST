@@ -171,12 +171,6 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                     detail: answer?.detail || ''
                 };
             }) || [];
-            
-            // 커스텀 질문 응답 변환
-            const customQuestionResponses = fields?.customQuestions?.map((question, idx) => ({
-                question,
-                answer: applicationForm.customAnswers[idx] || ''
-            })) || [];
 
             // 백엔드 API로 지원서 저장
             const applicationData = {

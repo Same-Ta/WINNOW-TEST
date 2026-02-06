@@ -38,6 +38,7 @@ interface ChatMessage {
     text: string;
     timestamp: string;
     options?: string[];
+    parts?: { text: string }[];
 }
 
 interface ChatInterfaceProps {
@@ -375,8 +376,8 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
             let aiOptions: string[] | undefined = undefined;
             try {
                 if (response.options && Array.isArray(response.options) && response.options.length > 0) {
-                    aiOptions = response.options.filter(opt => typeof opt === 'string' && opt.trim().length > 0);
-                    if (aiOptions.length === 0) {
+                    aiOptions = response.options.filter((opt: any) => typeof opt === 'string' && opt.trim().length > 0);
+                    if (aiOptions && aiOptions.length === 0) {
                         aiOptions = undefined;
                     }
                 }

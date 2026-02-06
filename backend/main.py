@@ -18,10 +18,19 @@ from routes.gemini import router as gemini_router
 
 app = FastAPI(title="Winnow API", version="1.0.0")
 
-# CORS 설정
+# CORS 설정 (프로덕션에서는 실제 프론트엔드 URL만 허용)
+import os
+allowed_origins = [
+    "http://localhost:5173",  # 로컬 개발
+    "http://localhost:3000",
+    "https://www.winnow.kr",  # 프로덕션 도메인
+    "https://winnow.kr",      # 도메인 리다이렉트 대비
+    os.getenv("FRONTEND_URL", "https://www.winnow.kr"),
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

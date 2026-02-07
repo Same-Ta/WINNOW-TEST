@@ -231,9 +231,12 @@ class ApplicationResponse(BaseModel):
                 if field in data and data[field] is not None:
                     try:
                         # Try to decrypt - if it fails, assume it's already decrypted (legacy data)
-                        data[field] = encryptor.decrypt(str(data[field]))
-                    except Exception:
+                        original_value = str(data[field])
+                        data[field] = encryptor.decrypt(original_value)
+                        print(f"✅ Successfully decrypted {field}")
+                    except Exception as e:
                         # If decryption fails, keep original value (backward compatibility)
+                        print(f"⚠️ Failed to decrypt {field}: {str(e)} - keeping original value")
                         pass
         
         return data

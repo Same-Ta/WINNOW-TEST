@@ -122,7 +122,31 @@ async def analyze_application(request: AIAnalysisRequest, user_data: dict = Depe
         if not GEMINI_API_KEY:
             raise HTTPException(status_code=500, detail="Gemini API key not configured")
 
-        applicant = request.applicantData
+        # application ID가 제공된 경우 DB에서 복호화된 데이터를 가져옴
+        if 'id' in request.applicantData or 'applicationId' in request.applicantData:
+            app_id = request.applicantData.get('id') or request.applicantData.get('applicationId')
+            print(f"🔄 Fetching and decrypting application {app_id} for AI analysis...")
+            
+            doc = db.collection('applications').document(app_id).get()
+            if not doc.exists:
+                raise HTTPException(status_code=404, detail="Application not found")
+            
+            app_data = doc.to_dict()
+            app_data['applicationId'] = doc.id
+            app_data['id'] = doc.id
+            
+            # ApplicationResponse를 통해 복호화
+            try:
+                decrypted_app = ApplicationResponse(**app_data)
+                applicant = decrypted_app.model_dump()
+                print(f"✅ Successfully decrypted application data for AI analysis")
+            except Exception as e:
+                print(f"⚠️ Failed to decrypt application for AI: {str(e)}")
+                # 실패 시 원본 데이터 사용
+                applicant = app_data
+        else:
+            # ID가 없으면 전달받은 데이터 그대로 사용 (backward compatibility)
+            applicant = request.applicantData
 
         prompt = f"""[시스템 역할]
 당신은 초기 스타트업의 생존을 결정짓는 전문 채용 컨설턴트입니다. 지원자의 답변에서 미사여구를 제거하고, 오직 [데이터, 방법론, 행동 패턴]만을 근거로 역량(Skill)과 의지(Will)를 냉정하게 판별합니다.
@@ -274,11 +298,18 @@ async def get_applications(user_data: dict = Depends(verify_token)):
             
             # ApplicationResponse 모델을 통해 자동 복호화
             try:
+                print(f"🔄 Decrypting application {doc.id}...")
                 decrypted_app = ApplicationResponse(**app_data)
-                applications.append(decrypted_app.model_dump())
+                decrypted_data = decrypted_app.model_dump()
+                decrypted_data['id'] = doc.id  # id 필드 추가
+                applications.append(decrypted_data)
+                print(f"✅ Successfully processed application {doc.id}")
             except Exception as e:
-                # 복호화 실패 시 원본 데이터 반환 (backward compatibility)
-                print(f"⚠️ Failed to decrypt application {doc.id}: {str(e)}")
+                # 복호화 실패 시 상세 에러 로깅
+                print(f"❌ Failed to process application {doc.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # 원본 데이터 반환 (backward compatibility)
                 app_data['id'] = doc.id
                 applications.append(app_data)
             
@@ -295,11 +326,18 @@ async def get_applications(user_data: dict = Depends(verify_token)):
                     
                     # ApplicationResponse 모델을 통해 자동 복호화
                     try:
+                        print(f"🔄 Decrypting application {doc.id}...")
                         decrypted_app = ApplicationResponse(**app_data)
-                        applications.append(decrypted_app.model_dump())
+                        decrypted_data = decrypted_app.model_dump()
+                        decrypted_data['id'] = doc.id  # id 필드 추가
+                        applications.append(decrypted_data)
+                        print(f"✅ Successfully processed application {doc.id}")
                     except Exception as e:
-                        # 복호화 실패 시 원본 데이터 반환
-                        print(f"⚠️ Failed to decrypt application {doc.id}: {str(e)}")
+                        # 복호화 실패 시 상세 에러 로깅
+                        print(f"❌ Failed to process application {doc.id}: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
+                        # 원본 데이터 반환
                         app_data['id'] = doc.id
                         applications.append(app_data)
                     
@@ -335,11 +373,18 @@ async def get_application(application_id: str, user_data: dict = Depends(verify_
         
         # ApplicationResponse 모델을 통해 자동 복호화
         try:
+            print(f"🔄 Decrypting application {doc.id}...")
             decrypted_app = ApplicationResponse(**app_data)
-            return decrypted_app.model_dump()
+            decrypted_data = decrypted_app.model_dump()
+            decrypted_data['id'] = doc.id
+            print(f"✅ Successfully processed application {doc.id}")
+            return decrypted_data
         except Exception as e:
-            # 복호화 실패 시 원본 데이터 반환 (backward compatibility)
-            print(f"⚠️ Failed to decrypt application {doc.id}: {str(e)}")
+            # 복호화 실패 시 상세 에러 로깅
+            print(f"❌ Failed to process application {doc.id}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # 원본 데이터 반환 (backward compatibility)
             app_data['id'] = doc.id
             return app_data
     except HTTPException:

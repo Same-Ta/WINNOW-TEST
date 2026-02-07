@@ -26,12 +26,17 @@ if not firebase_admin._apps:
     storage_bucket = os.getenv("FIREBASE_STORAGE_BUCKET", "")
     
     cred = credentials.Certificate(firebase_config)
-    firebase_admin.initialize_app(cred, {
-        'storageBucket': storage_bucket
-    })
+    
+    init_options = {}
+    if storage_bucket:
+        init_options['storageBucket'] = storage_bucket
+    
+    firebase_admin.initialize_app(cred, init_options)
 
 # Firestore 클라이언트
 db = firestore.client()
 
-# Storage 버킷
-bucket = storage.bucket()
+# Storage 버킷 (환경변수 설정된 경우에만)
+bucket = None
+if os.getenv("FIREBASE_STORAGE_BUCKET"):
+    bucket = storage.bucket()

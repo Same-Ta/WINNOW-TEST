@@ -44,6 +44,9 @@ async def create_application(application: ApplicationCreate):
 async def upload_portfolio(file: UploadFile = File(...)):
     """포트폴리오 PDF 파일을 업로드합니다."""
     try:
+        if not bucket:
+            raise HTTPException(status_code=500, detail="Storage가 설정되지 않았습니다. FIREBASE_STORAGE_BUCKET 환경변수를 확인해주세요.")
+        
         # PDF 검증
         if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="PDF 파일만 업로드 가능합니다.")
@@ -77,6 +80,9 @@ async def upload_portfolio(file: UploadFile = File(...)):
 async def download_portfolio(application_id: str, user_data: dict = Depends(verify_token)):
     """지원서의 포트폴리오 PDF를 다운로드합니다."""
     try:
+        if not bucket:
+            raise HTTPException(status_code=500, detail="Storage가 설정되지 않았습니다.")
+        
         # 지원서 조회
         app_doc = db.collection('applications').document(application_id).get()
         if not app_doc.exists:

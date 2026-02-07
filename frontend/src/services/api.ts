@@ -1,4 +1,5 @@
 import { auth } from '@/config/firebase';
+import { cache } from '@/utils/cache';
 
 // @ts-ignore
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -77,14 +78,27 @@ export const authAPI = {
 // ==================== JD API ====================
 export const jdAPI = {
   create: async (jdData: any) => {
-    return await apiRequest('/api/jds', {
+    const result = await apiRequest('/api/jds', {
       method: 'POST',
       body: JSON.stringify(jdData),
     });
+    cache.invalidate('jds-all');
+    return result;
   },
 
-  getAll: async () => {
-    return await apiRequest('/api/jds');
+  getAll: async (useCache: boolean = true) => {
+    if (useCache) {
+      const cached = cache.get('jds-all');
+      if (cached) {
+        console.log('✅ 캐시에서 JD 목록 로드');
+        return cached;
+      }
+    }
+    
+    console.log('🔄 서버에서 JD 목록 로드');
+    const data = await apiRequest('/api/jds');
+    cache.set('jds-all', data, 5 * 60 * 1000); // 5분 캐시
+    return data;
   },
 
   getById: async (jdId: string) => {
@@ -92,47 +106,88 @@ export const jdAPI = {
   },
 
   update: async (jdId: string, jdData: any) => {
-    return await apiRequest(`/api/jds/${jdId}`, {
+    const result = await apiRequest(`/api/jds/${jdId}`, {
       method: 'PUT',
       body: JSON.stringify(jdData),
     });
+    cache.invalidate('jds-all');
+    return result;
   },
 
   delete: async (jdId: string) => {
-    return await apiRequest(`/api/jds/${jdId}`, {
+    const result = await apiRequest(`/api/jds/${jdId}`, {
       method: 'DELETE',
     });
+    cache.invalidate('jds-all');
+    return result;
   },
 };
 
 // ==================== Application API ====================
 export const applicationAPI = {
   create: async (applicationData: any) => {
-    return await publicApiRequest('/api/applications', {
+    const result = await publicApiRequest('/api/applications', {
       method: 'POST',
       body: JSON.stringify(applicationData),
     });
+    // 캐시 무효화
+    cache.invalidate('applications-all');
+    return result;
   },
 
-  getAll: async () => {
-    return await apiRequest('/api/applications');
+  getAll: async (useCache: boolean = true) => {
+    // 캐시 확인
+    if (useCache) {
+      const cached = cache.get('applications-all');
+      if (cached) {
+        console.log('✅ 캐시에서 지원서 데이터 로드');
+        return cached;
+      }
+    }
+    
+    console.log('🔄 서버에서 지원서 데이터 로드');
+    const data = await apiRequest('/api/applications');
+    
+    // 캐시 저장 (3분)
+    cache.set('applications-all', data, 3 * 60 * 1000);
+    return data;
   },
 
-  getById: async (applicationId: string) => {
-    return await apiRequest(`/api/applications/${applicationId}`);
+  getById: async (applicationId: string, useCache: boolean = true) => {
+    const cacheKey = `application-${applicationId}`;
+    
+    if (useCache) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        console.log(`✅ 캐시에서 지원서 ${applicationId} 로드`);
+        return cached;
+      }
+    }
+    
+    const data = await apiRequest(`/api/applications/${applicationId}`);
+    cache.set(cacheKey, data, 3 * 60 * 1000);
+    return data;
   },
 
   update: async (applicationId: string, status: string) => {
-    return await apiRequest(`/api/applications/${applicationId}`, {
+    const result = await apiRequest(`/api/applications/${applicationId}`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
+    // 관련 캐시 무효화
+    cache.invalidate('applications-all');
+    cache.invalidate(`application-${applicationId}`);
+    return result;
   },
 
   delete: async (applicationId: string) => {
-    return await apiRequest(`/api/applications/${applicationId}`, {
+    const result = await apiRequest(`/api/applications/${applicationId}`, {
       method: 'DELETE',
     });
+    // 관련 캐시 무효화
+    cache.invalidate('applications-all');
+    cache.invalidate(`application-${applicationId}`);
+    return result;
   },
 
   analyze: async (applicantData: any) => {
@@ -140,6 +195,12 @@ export const applicationAPI = {
       method: 'POST',
       body: JSON.stringify({ applicantData }),
     });
+  },
+  
+  // 캐시 강제 새로고침
+  refresh: async () => {
+    cache.invalidate('applications-all');
+    return await applicationAPI.getAll(false);
   },
 };
 

@@ -39,7 +39,23 @@ FIREBASE_AUTH_PROVIDER_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
 FIREBASE_CLIENT_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/your_email
 
 FRONTEND_URL=https://your-app.vercel.app
+
+# 🔐 Encryption (AES-256-GCM) - 매우 중요!
+# 로컬 backend/.env 파일의 ENCRYPTION_KEY 값을 그대로 복사해서 붙여넣기
+# ⚠️ 주의: 로컬과 배포 환경의 키가 달라지면 암호화된 데이터를 복호화할 수 없습니다!
+ENCRYPTION_KEY=57kV074WuPX+Mf6uft0l2J8bmaxWtZklfWKYngDembE=
 ```
+
+**⚠️ ENCRYPTION_KEY 설정 중요 사항:**
+
+1. **로컬 키 사용**: `backend/.env` 파일에서 `ENCRYPTION_KEY` 값을 **정확히** 복사
+2. **키가 다르면**: 로컬에서 암호화된 데이터(지원자 이름, 이메일 등)를 배포 환경에서 복호화할 수 없음
+3. **키 확인 방법**:
+   ```bash
+   cd backend
+   cat .env | grep ENCRYPTION_KEY
+   # 출력된 값을 Render 환경 변수에 그대로 입력
+   ```
 
 ### 1-4. 배포 완료
 - 배포 URL 확인: `https://winnow-backend.onrender.com`
@@ -135,6 +151,48 @@ curl https://winnow-backend.onrender.com/
 
 ### 해결책 (선택)
 - **UptimeRobot** 등으로 5분마다 Health Check 요청 → Sleep 방지
+
+---
+
+## 🐛 7. 배포 환경 문제 해결
+
+### 문제: UI에 암호화된 데이터가 그대로 표시됨
+
+**증상**: 지원자 이름이나 이메일이 `bjNkNg8iY1UfV54pI7COSArzQsAJo1ckny32ojA4...` 같은 암호화된 문자열로 표시
+
+**원인**: 배포 환경에 `ENCRYPTION_KEY`가 설정되지 않았거나 로컬과 다른 키를 사용
+
+**해결 방법**:
+
+1. **Render 환경 변수 확인**:
+   - Render Dashboard → 해당 서비스 → Environment
+   - `ENCRYPTION_KEY`가 있는지 확인
+   
+2. **로컬 키 복사**:
+   ```bash
+   # Windows
+   cd backend
+   type .env | findstr ENCRYPTION_KEY
+   
+   # Mac/Linux
+   cd backend
+   cat .env | grep ENCRYPTION_KEY
+   ```
+   
+3. **Render에 키 추가**:
+   - Key: `ENCRYPTION_KEY`
+   - Value: 로컬에서 복사한 값 (예: `57kV074WuPX+Mf6uft0l2J8bmaxWtZklfWKYngDembE=`)
+   - **Save Changes** 클릭
+   
+4. **재배포**:
+   - Render Dashboard → Manual Deploy → Deploy latest commit
+   - 또는 Git push로 자동 재배포
+   
+5. **확인**:
+   - 배포 완료 후 프론트엔드 새로고침
+   - 지원자 관리 페이지에서 이름/이메일이 정상 표시되는지 확인
+
+**중요**: 로컬과 배포 환경의 `ENCRYPTION_KEY`는 **반드시 동일**해야 합니다!
 
 ---
 

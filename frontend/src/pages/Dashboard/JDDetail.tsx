@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth } from '@/config/firebase';
 import { jdAPI, applicationAPI } from '@/services/api';
-import { X } from 'lucide-react';
 
 interface JDDetailProps {
     jdId?: string;

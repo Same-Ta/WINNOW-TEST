@@ -1,4 +1,4 @@
-import { Plus, ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { Badge } from '@/components/common/Badge';
 import { useState, useEffect } from 'react';
 import { auth } from '@/config/firebase';

@@ -30,6 +30,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
     """현재 사용자의 모든 JD를 반환합니다 (소유 + 협업 포함)."""
     try:
         uid = user_data['uid']
+        user_email = user_data.get('email', '').lower()
         jds = []
         seen_ids = set()
 
@@ -42,7 +43,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
             jds.append(jd_data)
             seen_ids.add(doc.id)
 
-        # 2. 협업자로 초대된 JD
+        # 2. 협업자로 초대된 JD (UID 기반)
         collab_ref = db.collection('jds').where('collaboratorIds', 'array_contains', uid)
         for doc in collab_ref.stream():
             if doc.id not in seen_ids:
@@ -51,6 +52,34 @@ async def get_jds(user_data: dict = Depends(verify_token)):
                 jd_data['_role'] = 'collaborator'
                 jds.append(jd_data)
                 seen_ids.add(doc.id)
+
+        # 3. 이메일로 초대되었지만 UID가 아직 연결 안 된 JD (폴백)
+        if user_email:
+            email_ref = db.collection('jds').where('collaboratorEmails', 'array_contains', user_email)
+            for doc in email_ref.stream():
+                if doc.id not in seen_ids:
+                    jd_data = doc.to_dict()
+                    jd_data['id'] = doc.id
+                    jd_data['_role'] = 'collaborator'
+                    jds.append(jd_data)
+                    seen_ids.add(doc.id)
+
+                    # UID를 collaboratorIds에 자동 추가 (마이그레이션)
+                    try:
+                        doc.reference.update({
+                            'collaboratorIds': firebase_firestore.ArrayUnion([uid])
+                        })
+                        # collaborators 배열의 해당 항목에도 uid 업데이트
+                        collabs = jd_data.get('collaborators', [])
+                        updated = False
+                        for c in collabs:
+                            if c.get('email', '').lower() == user_email and not c.get('uid'):
+                                c['uid'] = uid
+                                updated = True
+                        if updated:
+                            doc.reference.update({'collaborators': collabs})
+                    except Exception:
+                        pass  # 마이그레이션 실패해도 JD 목록은 정상 반환
 
         return jds
     except Exception as e:

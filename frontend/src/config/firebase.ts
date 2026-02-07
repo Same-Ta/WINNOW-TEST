@@ -14,5 +14,5 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-// Firebase Authentication만 사용 (로그인/로그아웃)
+// Firebase Authentication
 export const auth = getAuth(app);

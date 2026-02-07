@@ -45,6 +45,7 @@ interface JDData {
         major: boolean;
         portfolio: boolean;
         customQuestions: string[];
+        skillOptions?: { category: string; skills: string[] }[];
     };
 }
 
@@ -67,9 +68,12 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
         university: '',
         major: '',
         portfolio: '',
+        portfolioFile: null as File | null,
+        portfolioFileName: '',
         customAnswers: {} as Record<number, string>,
         requirementAnswers: {} as Record<number, { checked: boolean; detail: string }>,
-        preferredAnswers: {} as Record<number, { checked: boolean; detail: string }>
+        preferredAnswers: {} as Record<number, { checked: boolean; detail: string }>,
+        selectedSkills: {} as Record<string, string[]>
     });
     
     // 공고 페이지에서의 체크박스 상태 (보여주기용)
@@ -216,6 +220,15 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                 };
             }) || [];
 
+            // PDF 파일 업로드 처리
+            let portfolioFileUrl = '';
+            let portfolioFileName = '';
+            if (applicationForm.portfolioFile) {
+                const uploadResult = await applicationAPI.uploadPortfolio(applicationForm.portfolioFile);
+                portfolioFileUrl = uploadResult.fileUrl;
+                portfolioFileName = uploadResult.fileName;
+            }
+
             // 백엔드 API로 지원서 저장
             const applicationData = {
                 jdId: jdId,
@@ -228,9 +241,12 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                 university: applicationForm.university || '',
                 major: applicationForm.major || '',
                 portfolio: applicationForm.portfolio || '',
+                portfolioFileUrl: portfolioFileUrl,
+                portfolioFileName: portfolioFileName,
                 customAnswers: applicationForm.customAnswers || {},
                 requirementAnswers: requirementResponses,
-                preferredAnswers: preferredResponses
+                preferredAnswers: preferredResponses,
+                selectedSkills: applicationForm.selectedSkills || {}
             };
 
             await applicationAPI.create(applicationData);
@@ -248,9 +264,12 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                 university: '',
                 major: '',
                 portfolio: '',
+                portfolioFile: null,
+                portfolioFileName: '',
                 customAnswers: {},
                 requirementAnswers: {},
-                preferredAnswers: {}
+                preferredAnswers: {},
+                selectedSkills: {}
             });
 
         } catch (error) {
@@ -744,6 +763,140 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                             )}
                         </div>
 
+                        {/* 스킬/도구 체크리스트 섹션 */}
+                        {((jdData?.applicationFields?.skillOptions && jdData.applicationFields.skillOptions.length > 0) || isEditing) && (
+                            <div className="space-y-3">
+                                <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                    스킬 / 도구 체크리스트
+                                </h4>
+                                {isEditing ? (
+                                    <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-lg p-5 space-y-4">
+                                        <p className="text-[12px] text-indigo-500 font-medium">지원자가 선택할 수 있는 스킬 목록을 수정하세요</p>
+                                        {(editedData?.applicationFields?.skillOptions || []).map((cat, catIdx) => (
+                                            <div key={catIdx} className="bg-white rounded-lg p-4 border border-indigo-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <input
+                                                        type="text"
+                                                        value={cat.category}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...(editedData?.applicationFields?.skillOptions || [])];
+                                                            newOptions[catIdx] = { ...newOptions[catIdx], category: e.target.value };
+                                                            updateEditedField('applicationFields', { ...editedData?.applicationFields, skillOptions: newOptions });
+                                                        }}
+                                                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-[13px] font-bold focus:ring-2 focus:ring-indigo-500"
+                                                        placeholder="카테고리명"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const newOptions = (editedData?.applicationFields?.skillOptions || []).filter((_, i) => i !== catIdx);
+                                                            updateEditedField('applicationFields', { ...editedData?.applicationFields, skillOptions: newOptions });
+                                                        }}
+                                                        className="px-2 py-1.5 bg-red-500 text-white rounded-lg text-[11px] hover:bg-red-600"
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 mb-2">
+                                                    {cat.skills.map((skill, skillIdx) => (
+                                                        <span key={skillIdx} className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-[12px] text-indigo-700 font-medium">
+                                                            {skill}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newOptions = [...(editedData?.applicationFields?.skillOptions || [])];
+                                                                    newOptions[catIdx] = { ...newOptions[catIdx], skills: newOptions[catIdx].skills.filter((_, i) => i !== skillIdx) };
+                                                                    updateEditedField('applicationFields', { ...editedData?.applicationFields, skillOptions: newOptions });
+                                                                }}
+                                                                className="text-indigo-400 hover:text-red-500 ml-0.5"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="스킬명 입력 후 추가"
+                                                        className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] focus:ring-2 focus:ring-indigo-500"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && (e.target as HTMLInputElement).value.trim()) {
+                                                                const val = (e.target as HTMLInputElement).value.trim();
+                                                                const newOptions = [...(editedData?.applicationFields?.skillOptions || [])];
+                                                                if (!newOptions[catIdx].skills.includes(val)) {
+                                                                    newOptions[catIdx] = { ...newOptions[catIdx], skills: [...newOptions[catIdx].skills, val] };
+                                                                    updateEditedField('applicationFields', { ...editedData?.applicationFields, skillOptions: newOptions });
+                                                                }
+                                                                (e.target as HTMLInputElement).value = '';
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => {
+                                                const newOptions = [...(editedData?.applicationFields?.skillOptions || []), { category: '', skills: [] }];
+                                                updateEditedField('applicationFields', { ...editedData?.applicationFields, skillOptions: newOptions });
+                                            }}
+                                            className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-[12px] font-bold hover:bg-indigo-600"
+                                        >
+                                            + 카테고리 추가
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-lg p-5 space-y-5">
+                                        <p className="text-[12px] text-indigo-500 font-medium">
+                                            {isOwner ? '지원자가 선택할 수 있는 스킬 목록입니다' : '보유하고 있는 스킬을 선택해주세요'}
+                                        </p>
+                                        {jdData!.applicationFields!.skillOptions!.map((cat, catIdx) => (
+                                            <div key={catIdx}>
+                                                <span className="text-[12px] font-bold text-gray-700 mb-2 block">{cat.category}</span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {cat.skills.map((skill, skillIdx) => {
+                                                        const isSelected = (applicationForm.selectedSkills[cat.category] || []).includes(skill);
+                                                        return (
+                                                            <button
+                                                                key={skillIdx}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (!isOwner) {
+                                                                        setApplicationForm(prev => {
+                                                                            const current = prev.selectedSkills[cat.category] || [];
+                                                                            const updated = isSelected
+                                                                                ? current.filter(s => s !== skill)
+                                                                                : [...current, skill];
+                                                                            return {
+                                                                                ...prev,
+                                                                                selectedSkills: {
+                                                                                    ...prev.selectedSkills,
+                                                                                    [cat.category]: updated
+                                                                                }
+                                                                            };
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                disabled={!!isOwner}
+                                                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-all ${
+                                                                    isOwner
+                                                                        ? 'bg-white text-gray-500 border-gray-200 cursor-default'
+                                                                        : isSelected
+                                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 cursor-pointer'
+                                                                }`}
+                                                            >
+                                                                {!isOwner && isSelected && <span className="mr-1">✓</span>}
+                                                                {skill}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Footer */}
                         <div className="pt-6 border-t border-gray-100 flex justify-end items-center">
                             {!isOwner && (
@@ -771,6 +924,77 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                         <div className="text-right pt-4">
                             <p className="text-[11px] font-bold text-gray-400">WINNOW Recruiting Team</p>
                         </div>
+
+                        {/* 지원 양식 설정 (수정 모드) */}
+                        {isEditing && (
+                            <div className="space-y-3 border-t border-gray-200 pt-6">
+                                <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">지원 양식 설정</h4>
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+                                    <p className="text-[12px] text-gray-500">지원자가 작성할 항목을 선택하세요</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { key: 'phone', label: '연락처' },
+                                            { key: 'gender', label: '성별' },
+                                            { key: 'birthDate', label: '생년월일' },
+                                            { key: 'university', label: '학교' },
+                                            { key: 'major', label: '전공' },
+                                            { key: 'portfolio', label: '포트폴리오' },
+                                        ].map(({ key, label }) => (
+                                            <label key={key} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!(editedData?.applicationFields as any)?.[key]}
+                                                    onChange={(e) => {
+                                                        const fields = editedData?.applicationFields || { name: true, email: true, phone: false, gender: false, birthDate: false, university: false, major: false, portfolio: false, customQuestions: [], skillOptions: [] };
+                                                        updateEditedField('applicationFields', { ...fields, [key]: e.target.checked });
+                                                    }}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="text-[13px] text-gray-700">{label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    {/* 커스텀 질문 수정 */}
+                                    <div className="border-t border-gray-200 pt-4 mt-4">
+                                        <span className="text-[12px] font-bold text-gray-600 mb-2 block">커스텀 질문</span>
+                                        {(editedData?.applicationFields?.customQuestions || []).map((q, idx) => (
+                                            <div key={idx} className="flex gap-2 mb-2">
+                                                <input
+                                                    type="text"
+                                                    value={q}
+                                                    onChange={(e) => {
+                                                        const questions = [...(editedData?.applicationFields?.customQuestions || [])];
+                                                        questions[idx] = e.target.value;
+                                                        updateEditedField('applicationFields', { ...editedData?.applicationFields, customQuestions: questions });
+                                                    }}
+                                                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-[12px] focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="질문 입력"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const questions = (editedData?.applicationFields?.customQuestions || []).filter((_, i) => i !== idx);
+                                                        updateEditedField('applicationFields', { ...editedData?.applicationFields, customQuestions: questions });
+                                                    }}
+                                                    className="px-2 py-1.5 bg-red-500 text-white rounded-lg text-[11px] hover:bg-red-600"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => {
+                                                const questions = [...(editedData?.applicationFields?.customQuestions || []), ''];
+                                                updateEditedField('applicationFields', { ...editedData?.applicationFields, customQuestions: questions });
+                                            }}
+                                            className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-[11px] font-bold hover:bg-purple-600"
+                                        >
+                                            + 질문 추가
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -913,19 +1137,120 @@ export const JDDetail = ({ jdId, onNavigate }: JDDetailProps) => {
                                     
                                     {jdData?.applicationFields?.portfolio && (
                                         <div>
-                                            <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">포트폴리오 링크</label>
+                                            <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">포트폴리오</label>
+                                            
+                                            {/* 링크 입력 */}
                                             <input
                                                 type="url"
                                                 value={applicationForm.portfolio}
                                                 onChange={(e) => setApplicationForm({ ...applicationForm, portfolio: e.target.value })}
-                                                placeholder="https://..."
+                                                placeholder="포트폴리오 링크 (https://...)"
                                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all placeholder:text-gray-300"
                                             />
+                                            
+                                            <div className="flex items-center gap-3 my-2">
+                                                <div className="flex-1 h-px bg-gray-200" />
+                                                <span className="text-[11px] text-gray-400 font-medium">또는 PDF 첨부</span>
+                                                <div className="flex-1 h-px bg-gray-200" />
+                                            </div>
+                                            
+                                            {/* PDF 업로드 */}
+                                            {applicationForm.portfolioFile ? (
+                                                <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+                                                    <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <span className="text-[13px] text-blue-700 font-medium flex-1 truncate">{applicationForm.portfolioFileName}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setApplicationForm({ ...applicationForm, portfolioFile: null, portfolioFileName: '' })}
+                                                        className="text-blue-400 hover:text-red-500 text-[18px] transition-colors flex-shrink-0"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <label className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-all group">
+                                                    <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                    </svg>
+                                                    <span className="text-[13px] text-gray-500 group-hover:text-blue-600 font-medium transition-colors">PDF 파일 첨부 (최대 10MB)</span>
+                                                    <input
+                                                        type="file"
+                                                        accept=".pdf"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                if (file.size > 10 * 1024 * 1024) {
+                                                                    alert('파일 크기는 10MB 이하여야 합니다.');
+                                                                    return;
+                                                                }
+                                                                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                                                                    alert('PDF 파일만 업로드 가능합니다.');
+                                                                    return;
+                                                                }
+                                                                setApplicationForm({ ...applicationForm, portfolioFile: file, portfolioFileName: file.name });
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                             )}
                             
+                            {/* 스킬/도구 체크리스트 */}
+                            {jdData?.applicationFields?.skillOptions && jdData.applicationFields.skillOptions.length > 0 && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                        <span className="text-[13px] font-bold text-gray-800">보유 스킬</span>
+                                    </div>
+                                    <p className="text-[12px] text-gray-400 -mt-2">해당하는 항목을 모두 선택해주세요</p>
+                                    
+                                    {jdData.applicationFields.skillOptions.map((cat, catIdx) => (
+                                        <div key={catIdx}>
+                                            <label className="block text-[13px] font-semibold text-gray-600 mb-2">{cat.category}</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {cat.skills.map((skill, skillIdx) => {
+                                                    const isSelected = (applicationForm.selectedSkills[cat.category] || []).includes(skill);
+                                                    return (
+                                                        <button
+                                                            key={skillIdx}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setApplicationForm(prev => {
+                                                                    const current = prev.selectedSkills[cat.category] || [];
+                                                                    const updated = isSelected
+                                                                        ? current.filter(s => s !== skill)
+                                                                        : [...current, skill];
+                                                                    return {
+                                                                        ...prev,
+                                                                        selectedSkills: {
+                                                                            ...prev.selectedSkills,
+                                                                            [cat.category]: updated
+                                                                        }
+                                                                    };
+                                                                });
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-all ${
+                                                                isSelected
+                                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                                                            }`}
+                                                        >
+                                                            {skill}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 커스텀 질문 */}
                             {jdData?.applicationFields?.customQuestions && jdData.applicationFields.customQuestions.length > 0 && (
                                 <div className="space-y-4">

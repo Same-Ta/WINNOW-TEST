@@ -77,9 +77,12 @@ class ApplicationCreate(BaseModel):
     university: Optional[str] = None
     major: Optional[str] = None
     portfolio: Optional[str] = None
+    portfolioFileUrl: Optional[str] = None
+    portfolioFileName: Optional[str] = None
     customAnswers: Optional[Dict[int, str]] = None
     requirementAnswers: Optional[List[Dict[str, Any]]] = None
     preferredAnswers: Optional[List[Dict[str, Any]]] = None
+    selectedSkills: Optional[Dict[str, Any]] = None
 
 
 class ApplicationUpdate(BaseModel):

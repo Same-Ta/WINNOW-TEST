@@ -35,6 +35,7 @@ interface CurrentJD {
         major: boolean;
         portfolio: boolean;
         customQuestions: string[];
+        skillOptions?: { category: string; skills: string[] }[];
     };
     // 동아리 모집 일정 필드
     recruitmentPeriod?: string;
@@ -122,9 +123,13 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
         university: false,
         major: false,
         portfolio: false,
-        customQuestions: [] as string[]
+        customQuestions: [] as string[],
+        skillOptions: [] as { category: string; skills: string[] }[]
     });
     const [newCustomQuestion, setNewCustomQuestion] = useState('');
+    const [newSkillCategory, setNewSkillCategory] = useState('');
+    const [newSkillItem, setNewSkillItem] = useState('');
+    const [editingSkillCategoryIdx, setEditingSkillCategoryIdx] = useState<number | null>(null);
 
     // 페이지 로드 시 localStorage에서 데이터 복원
     useEffect(() => {
@@ -360,7 +365,8 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 university: false,
                 major: false,
                 portfolio: false,
-                customQuestions: []
+                customQuestions: [],
+                skillOptions: []
             });
             
             // 체크 개수 초기화
@@ -1369,6 +1375,178 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                         추가
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* 스킬/도구 체크리스트 */}
+                            <div>
+                                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">스킬/도구 체크리스트</h3>
+                                <p className="text-[11px] text-gray-400 mb-3">지원자가 자신의 역량을 체크할 수 있는 항목을 추가하세요</p>
+                                
+                                {/* 추가된 카테고리 목록 */}
+                                {applicationFieldsConfig.skillOptions.length > 0 && (
+                                    <div className="space-y-3 mb-4">
+                                        {applicationFieldsConfig.skillOptions.map((cat, catIdx) => (
+                                            <div key={catIdx} className="bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+                                                <div className="flex items-center justify-between mb-2.5">
+                                                    <span className="text-[13px] font-bold text-gray-800">{cat.category}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            setApplicationFieldsConfig(prev => ({
+                                                                ...prev,
+                                                                skillOptions: prev.skillOptions.filter((_, i) => i !== catIdx)
+                                                            }));
+                                                        }}
+                                                        className="text-[11px] text-red-400 hover:text-red-600 font-medium"
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                                                    {cat.skills.map((skill, skillIdx) => (
+                                                        <span key={skillIdx} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[12px] text-gray-700">
+                                                            {skill}
+                                                            <button
+                                                                onClick={() => {
+                                                                    setApplicationFieldsConfig(prev => ({
+                                                                        ...prev,
+                                                                        skillOptions: prev.skillOptions.map((c, i) => 
+                                                                            i === catIdx 
+                                                                                ? { ...c, skills: c.skills.filter((_, si) => si !== skillIdx) }
+                                                                                : c
+                                                                        )
+                                                                    }));
+                                                                }}
+                                                                className="text-gray-400 hover:text-red-500 text-[10px] ml-0.5"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                {/* 해당 카테고리에 스킬 추가 */}
+                                                {editingSkillCategoryIdx === catIdx ? (
+                                                    <div className="flex gap-1.5">
+                                                        <input
+                                                            type="text"
+                                                            value={newSkillItem}
+                                                            onChange={(e) => setNewSkillItem(e.target.value)}
+                                                            onKeyPress={(e) => {
+                                                                if (e.key === 'Enter' && newSkillItem.trim()) {
+                                                                    setApplicationFieldsConfig(prev => ({
+                                                                        ...prev,
+                                                                        skillOptions: prev.skillOptions.map((c, i) => 
+                                                                            i === catIdx 
+                                                                                ? { ...c, skills: [...c.skills, newSkillItem.trim()] }
+                                                                                : c
+                                                                        )
+                                                                    }));
+                                                                    setNewSkillItem('');
+                                                                }
+                                                            }}
+                                                            placeholder="스킬명 입력 후 Enter"
+                                                            className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-[12px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                if (newSkillItem.trim()) {
+                                                                    setApplicationFieldsConfig(prev => ({
+                                                                        ...prev,
+                                                                        skillOptions: prev.skillOptions.map((c, i) => 
+                                                                            i === catIdx 
+                                                                                ? { ...c, skills: [...c.skills, newSkillItem.trim()] }
+                                                                                : c
+                                                                        )
+                                                                    }));
+                                                                    setNewSkillItem('');
+                                                                }
+                                                            }}
+                                                            className="px-2.5 py-1.5 bg-blue-600 text-white rounded-lg text-[11px] font-bold"
+                                                        >
+                                                            추가
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setEditingSkillCategoryIdx(null); setNewSkillItem(''); }}
+                                                            className="px-2.5 py-1.5 text-gray-400 hover:text-gray-600 text-[11px] font-bold"
+                                                        >
+                                                            완료
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setEditingSkillCategoryIdx(catIdx)}
+                                                        className="text-[11px] text-blue-600 hover:text-blue-700 font-medium"
+                                                    >
+                                                        + 항목 추가
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* 새 카테고리 추가 */}
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newSkillCategory}
+                                        onChange={(e) => setNewSkillCategory(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && newSkillCategory.trim()) {
+                                                setApplicationFieldsConfig(prev => ({
+                                                    ...prev,
+                                                    skillOptions: [...prev.skillOptions, { category: newSkillCategory.trim(), skills: [] }]
+                                                }));
+                                                setNewSkillCategory('');
+                                            }
+                                        }}
+                                        placeholder="카테고리명 (예: 프로그래밍 언어, 디자인 툴)"
+                                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-[13px] focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (newSkillCategory.trim()) {
+                                                setApplicationFieldsConfig(prev => ({
+                                                    ...prev,
+                                                    skillOptions: [...prev.skillOptions, { category: newSkillCategory.trim(), skills: [] }]
+                                                }));
+                                                setNewSkillCategory('');
+                                            }
+                                        }}
+                                        disabled={!newSkillCategory.trim()}
+                                        className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        추가
+                                    </button>
+                                </div>
+
+                                {/* 프리셋 버튼 */}
+                                {applicationFieldsConfig.skillOptions.length === 0 && (
+                                    <div className="mt-3">
+                                        <p className="text-[11px] text-gray-400 mb-2">빠른 추가</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {[
+                                                { category: '프로그래밍 언어', skills: ['Python', 'JavaScript', 'TypeScript', 'Java', 'C/C++', 'Go', 'Kotlin', 'Swift', 'Rust'] },
+                                                { category: '프레임워크', skills: ['React', 'Next.js', 'Vue.js', 'Spring', 'Django', 'FastAPI', 'Flutter', 'Node.js'] },
+                                                { category: '디자인 툴', skills: ['Figma', 'Photoshop', 'Illustrator', 'After Effects', 'Premiere Pro', 'Sketch', 'XD'] },
+                                                { category: '협업 툴', skills: ['Git', 'Notion', 'Slack', 'Jira', 'Confluence', 'Discord'] },
+                                            ].map((preset) => (
+                                                <button
+                                                    key={preset.category}
+                                                    onClick={() => {
+                                                        setApplicationFieldsConfig(prev => ({
+                                                            ...prev,
+                                                            skillOptions: [...prev.skillOptions, preset]
+                                                        }));
+                                                    }}
+                                                    className="px-2.5 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-[11px] font-medium hover:bg-blue-100 transition-colors"
+                                                >
+                                                    {preset.category}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         

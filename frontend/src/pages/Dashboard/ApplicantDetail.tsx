@@ -13,6 +13,9 @@ interface Application {
     applicantGender?: string;
     jdId?: string;
     jdTitle: string;
+    portfolio?: string;
+    portfolioFileUrl?: string;
+    portfolioFileName?: string;
     requirementAnswers?: Array<{ question: string; checked: boolean; detail: string; answer?: string }>;
     preferredAnswers?: Array<{ question: string; checked: boolean; detail: string; answer?: string }>;
     appliedAt: any;
@@ -213,6 +216,56 @@ export const ApplicantDetail = ({ applicationId, onBack }: ApplicantDetailProps)
                                 <p className="text-sm font-medium text-gray-900">{application.jdTitle}</p>
                             </div>
                         </div>
+
+                        {/* 포트폴리오 */}
+                        {(application.portfolio || application.portfolioFileUrl) && (
+                            <div className="mt-5 pt-5 border-t border-gray-100">
+                                <p className="text-xs text-gray-400 mb-3 font-semibold uppercase tracking-wider">포트폴리오</p>
+                                <div className="space-y-2">
+                                    {application.portfolio && (
+                                        <a
+                                            href={application.portfolio}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-xl transition-all group"
+                                        >
+                                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            <span className="text-sm text-gray-700 group-hover:text-blue-600 truncate">{application.portfolio}</span>
+                                        </a>
+                                    )}
+                                    {application.portfolioFileUrl && (
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await applicationAPI.downloadPortfolio(application.id);
+                                                    const blob = await response.blob();
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = application.portfolioFileName || 'portfolio.pdf';
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    window.URL.revokeObjectURL(url);
+                                                    document.body.removeChild(a);
+                                                } catch (error) {
+                                                    console.error('PDF 다운로드 실패:', error);
+                                                    alert('PDF 다운로드에 실패했습니다.');
+                                                }
+                                            }}
+                                            className="flex items-center gap-2 w-full px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-all group text-left"
+                                        >
+                                            <svg className="w-4 h-4 text-red-400 group-hover:text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span className="text-sm font-medium text-red-600 group-hover:text-red-700 truncate">{application.portfolioFileName || 'portfolio.pdf'}</span>
+                                            <span className="text-[11px] text-red-400 ml-auto flex-shrink-0">다운로드</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* AI 분석 */}

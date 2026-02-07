@@ -1,5 +1,5 @@
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, storage
 import os
 
 # Firebase Admin SDK 초기화
@@ -23,8 +23,15 @@ if not firebase_admin._apps:
         "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{os.getenv('FIREBASE_CLIENT_EMAIL')}"
     }
     
+    storage_bucket = os.getenv("FIREBASE_STORAGE_BUCKET", "")
+    
     cred = credentials.Certificate(firebase_config)
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': storage_bucket
+    })
 
 # Firestore 클라이언트
 db = firestore.client()
+
+# Storage 버킷
+bucket = storage.bucket()

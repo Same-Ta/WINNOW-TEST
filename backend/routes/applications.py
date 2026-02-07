@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from firebase_admin import firestore as firebase_firestore
 import json
+import uuid
+import io
 import google.generativeai as genai
 
-from config.firebase import db
+from config.firebase import db, bucket
 from config.gemini import GEMINI_API_KEY
 from dependencies.auth import verify_token
 from models.schemas import ApplicationCreate, ApplicationUpdate, AIAnalysisRequest, SaveAnalysisRequest
@@ -31,6 +34,75 @@ async def create_application(application: ApplicationCreate):
         doc_ref.set(app_data)
 
         return {"id": doc_ref.id, "message": "Application submitted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/upload-portfolio")
+async def upload_portfolio(file: UploadFile = File(...)):
+    """포트폴리오 PDF 파일을 업로드합니다."""
+    try:
+        # PDF 검증
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="PDF 파일만 업로드 가능합니다.")
+        
+        # 파일 크기 제한 (10MB)
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="파일 크기는 10MB 이하여야 합니다.")
+        
+        # 고유 파일명 생성
+        file_id = str(uuid.uuid4())
+        original_name = file.filename
+        blob_path = f"portfolios/{file_id}_{original_name}"
+        
+        # Firebase Storage에 업로드
+        blob = bucket.blob(blob_path)
+        blob.upload_from_string(contents, content_type='application/pdf')
+        
+        return {
+            "fileUrl": blob_path,
+            "fileName": original_name,
+            "message": "파일 업로드 완료"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/download-portfolio/{application_id}")
+async def download_portfolio(application_id: str, user_data: dict = Depends(verify_token)):
+    """지원서의 포트폴리오 PDF를 다운로드합니다."""
+    try:
+        # 지원서 조회
+        app_doc = db.collection('applications').document(application_id).get()
+        if not app_doc.exists:
+            raise HTTPException(status_code=404, detail="지원서를 찾을 수 없습니다.")
+        
+        app_data = app_doc.to_dict()
+        file_url = app_data.get('portfolioFileUrl', '')
+        file_name = app_data.get('portfolioFileName', 'portfolio.pdf')
+        
+        if not file_url:
+            raise HTTPException(status_code=404, detail="첨부된 포트폴리오 파일이 없습니다.")
+        
+        # Firebase Storage에서 다운로드
+        blob = bucket.blob(file_url)
+        if not blob.exists():
+            raise HTTPException(status_code=404, detail="파일이 존재하지 않습니다.")
+        
+        content = blob.download_as_bytes()
+        
+        return StreamingResponse(
+            io.BytesIO(content),
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{file_name}"'
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:

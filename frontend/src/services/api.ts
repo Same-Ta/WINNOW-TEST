@@ -222,6 +222,31 @@ export const applicationAPI = {
     cache.invalidate('applications-all');
     return await applicationAPI.getAll(false);
   },
+
+  uploadPortfolio: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/api/applications/upload-portfolio`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(error.detail || `업로드 실패: ${response.status}`);
+    }
+    return await response.json();
+  },
+
+  downloadPortfolio: async (applicationId: string) => {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/api/applications/download-portfolio/${applicationId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      throw new Error('다운로드 실패');
+    }
+    return response;
+  },
 };
 
 // ==================== Gemini API ====================
@@ -278,15 +303,19 @@ export const teamAPI = {
   },
 
   invite: async (jdId: string, email: string) => {
-    return await apiRequest('/api/team/invite', {
+    const result = await apiRequest('/api/team/invite', {
       method: 'POST',
       body: JSON.stringify({ jdId, email }),
     });
+    cache.invalidate('jds-all');
+    return result;
   },
 
   removeCollaborator: async (jdId: string, memberEmail: string) => {
-    return await apiRequest(`/api/team/collaborators/${jdId}/${encodeURIComponent(memberEmail)}`, {
+    const result = await apiRequest(`/api/team/collaborators/${jdId}/${encodeURIComponent(memberEmail)}`, {
       method: 'DELETE',
     });
+    cache.invalidate('jds-all');
+    return result;
   },
 };

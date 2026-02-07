@@ -67,6 +67,7 @@ async def invite_collaborator(invite: JDInvite, user_data: dict = Depends(verify
 
         update_data = {
             "collaborators": firebase_firestore.ArrayUnion([new_collaborator]),
+            "collaboratorEmails": firebase_firestore.ArrayUnion([email]),
         }
         if invited_uid:
             update_data["collaboratorIds"] = firebase_firestore.ArrayUnion([invited_uid])
@@ -167,9 +168,11 @@ async def remove_collaborator(jd_id: str, member_email: str, user_data: dict = D
             raise HTTPException(status_code=404, detail="해당 협업자를 찾을 수 없습니다.")
 
         new_ids = [c.get("uid") for c in new_collaborators if c.get("uid")]
+        new_emails = [c.get("email", "").lower() for c in new_collaborators if c.get("email")]
         jd_ref.update({
             "collaborators": new_collaborators,
             "collaboratorIds": new_ids,
+            "collaboratorEmails": new_emails,
         })
 
         return {"message": f"{member_email} 님을 공고에서 제거했습니다."}

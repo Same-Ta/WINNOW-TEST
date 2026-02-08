@@ -81,9 +81,9 @@ export const useApplicantStats = (): UseApplicantStatsResult => {
 
                 applications.forEach((app: any) => {
                     if (app.status === '합격') passed++;
-                    else if (app.status === '보류') pending++;
                     else if (app.status === '불합격') rejected++;
                     else if (app.status === '검토중') reviewing++;
+                    else reviewing++; // 기본값(미설정/보류 등)은 검토중으로 처리
 
                     if (app.appliedAt) {
                         const appliedDate = app.appliedAt.seconds

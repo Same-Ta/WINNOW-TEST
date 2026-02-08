@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Filter, Download, X, Sparkles, FileText, Trash2, Search, Calendar, ChevronDown, Users } from 'lucide-react';
 import { auth } from '@/config/firebase';
 import * as XLSX from 'xlsx';
@@ -43,10 +43,25 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
     const [selectedApplicant, setSelectedApplicant] = useState<Application | null>(null);
     const [aiSummary, setAiSummary] = useState<string>('');
     const [summaryLoading, setSummaryLoading] = useState(false);
+    
+    // 상태 드롭다운 메뉴
+    const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         fetchApplications();
         fetchJDs();
+    }, []);
+
+    // 상태 드롭다운 외부 클릭 감지
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+                setOpenStatusDropdown(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const fetchApplications = async () => {
@@ -770,33 +785,55 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
                                         </button>
                                     </td>
                                     <td className="px-3 py-3">
-                                        <div className="flex justify-center gap-1.5">
+                                        <div className="relative flex justify-center" ref={openStatusDropdown === application.id ? statusDropdownRef : undefined}>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleStatusChange(application.id, '합격');
+                                                    setOpenStatusDropdown(openStatusDropdown === application.id ? null : application.id);
                                                 }}
-                                                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all whitespace-nowrap min-w-[46px] ${
-                                                    application.status === '합격' 
-                                                        ? 'bg-green-500 text-white shadow-md' 
-                                                        : 'bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-600'
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap ${
+                                                    application.status === '합격'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : application.status === '불합격'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-gray-100 text-gray-600'
                                                 }`}
                                             >
-                                                합격
+                                                <span className={`w-2 h-2 rounded-full ${
+                                                    application.status === '합격' ? 'bg-green-500'
+                                                    : application.status === '불합격' ? 'bg-red-500'
+                                                    : 'bg-gray-400'
+                                                }`} />
+                                                {application.status || '검토중'}
                                             </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleStatusChange(application.id, '불합격');
-                                                }}
-                                                className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all whitespace-nowrap min-w-[46px] ${
-                                                    application.status === '불합격' 
-                                                        ? 'bg-red-500 text-white shadow-md' 
-                                                        : 'bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600'
-                                                }`}
-                                            >
-                                                불합격
-                                            </button>
+                                            {openStatusDropdown === application.id && (
+                                                <div className="absolute top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[130px] animate-in fade-in slide-in-from-top-1 duration-150">
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">상태 변경</div>
+                                                    {[
+                                                        { label: '검토중', color: 'bg-gray-400', hoverBg: 'hover:bg-gray-50' },
+                                                        { label: '합격', color: 'bg-green-500', hoverBg: 'hover:bg-green-50' },
+                                                        { label: '불합격', color: 'bg-red-500', hoverBg: 'hover:bg-red-50' },
+                                                    ].map(opt => (
+                                                        <button
+                                                            key={opt.label}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleStatusChange(application.id, opt.label);
+                                                                setOpenStatusDropdown(null);
+                                                            }}
+                                                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-[12px] font-medium text-gray-700 ${opt.hoverBg} transition-colors ${
+                                                                (application.status || '검토중') === opt.label ? 'bg-blue-50 text-blue-700' : ''
+                                                            }`}
+                                                        >
+                                                            <span className={`w-2.5 h-2.5 rounded-full ${opt.color}`} />
+                                                            {opt.label}
+                                                            {(application.status || '검토중') === opt.label && (
+                                                                <span className="ml-auto text-blue-500 text-[10px]">✓</span>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-3 py-3">

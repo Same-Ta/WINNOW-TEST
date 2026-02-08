@@ -405,6 +405,38 @@ export const FigmaComments = ({ applicationId, children }: FigmaCommentsProps) =
     fetchComments();
   }, [fetchComments]);
 
+  // 키보드 단축키: / → 코멘트 모드 토글, ESC → 코멘트 모드 해제
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // input, textarea, contenteditable 등 입력 필드에서는 무시
+      const tag = (e.target as HTMLElement).tagName;
+      const isEditable = (e.target as HTMLElement).isContentEditable;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || isEditable) return;
+
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setCommentMode(prev => {
+          if (!prev) {
+            setNewCommentPos(null);
+            setActiveThreadId(null);
+          }
+          return !prev;
+        });
+      }
+      if (e.key === 'Escape') {
+        if (newCommentPos) {
+          setNewCommentPos(null);
+        } else if (activeThreadId) {
+          setActiveThreadId(null);
+        } else if (commentMode) {
+          setCommentMode(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [commentMode, newCommentPos, activeThreadId]);
+
   // 스레드로 그룹핑
   const threads: CommentThread[] = (() => {
     const roots = comments.filter(c => !c.parentId && c.posX != null && c.posY != null);
@@ -451,6 +483,7 @@ export const FigmaComments = ({ applicationId, children }: FigmaCommentsProps) =
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
           </svg>
           {commentMode ? '코멘트 모드 ON' : '코멘트'}
+          <kbd className="ml-1 px-1.5 py-0.5 bg-black/10 rounded text-[10px] font-mono">/</kbd>
         </button>
 
         {threads.length > 0 && (
@@ -540,7 +573,7 @@ export const FigmaComments = ({ applicationId, children }: FigmaCommentsProps) =
             onClick={() => setCommentMode(false)}
             className="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-[11px] font-bold"
           >
-            ESC
+            ESC 또는 /
           </button>
         </div>
       )}

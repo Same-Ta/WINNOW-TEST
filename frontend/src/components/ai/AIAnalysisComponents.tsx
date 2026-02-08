@@ -139,16 +139,36 @@ export const parseFullAnalysis = (text: string): AnalysisResult => {
         if (!line || line === '---') continue;
 
         if (line.match(/\[0\./)) { currentSection = 'profile'; currentSubSection = ''; continue; }
+
+        // 플레이스홀더/템플릿 패턴 필터
+        const isPlaceholder = (val: string) => {
+            if (!val) return true;
+            const v = val.trim();
+            if (!v || v === '미기입') return true;
+            // 괄호 안 예시만 있는 경우: "(Android, iOS, ... 중 택1)"
+            if (/^\(.+\)$/.test(v)) return true;
+            // "미기입 / 미기입" 패턴
+            if (/^미기입\s*\/\s*미기입/.test(v)) return true;
+            // "학년 / 세" (숫자 없이 단위만 있는 경우) - 예: "학년 / 세 (여성)", "학년 / 세"
+            if (/학년\s*\/\s*세/.test(v) && !/\d+\s*학년/.test(v)) return true;
+            // "/ 세" 앞에 숫자가 없는 경우
+            if (/\/\s*세/.test(v) && !/\d+\s*세/.test(v)) return true;
+            // "pending (...)" 같은 템플릿
+            if (/^pending\s*\(/.test(v)) return true;
+            // 실제 데이터 없이 구분자/단위만 있는 경우
+            if (/^\s*$/.test(v.replace(/[\/()학년세여성남성미기입\s]/g, ''))) return true;
+            return false;
+        };
         if (line.match(/\[1\./)) { currentSection = 'overview'; currentSubSection = ''; continue; }
         if (line.match(/\[2\./)) { currentSection = 'skills'; currentSubSection = ''; continue; }
         if (line.match(/\[3\./)) { currentSection = 'cultureFit'; currentSubSection = ''; if (currentSkill) { result.skills.push(currentSkill); currentSkill = null; } continue; }
         if (line.match(/\[4\./)) { currentSection = 'guide'; currentSubSection = ''; continue; }
 
         if (currentSection === 'profile') {
-            const m1 = line.match(/지원 트랙\s*[::：]\s*(.+)/); if (m1) result.profile.track = m1[1].trim();
-            const m2 = line.match(/전공 정보\s*[::：]\s*(.+)/); if (m2) result.profile.major = m2[1].trim();
-            const m3 = line.match(/인적 사항\s*[::：]\s*(.+)/); if (m3) result.profile.info = m3[1].trim();
-            const m4 = line.match(/현재 상태\s*[::：]\s*(.+)/); if (m4) result.profile.status = m4[1].trim();
+            const m1 = line.match(/지원 트랙\s*[::：]\s*(.+)/); if (m1 && !isPlaceholder(m1[1])) result.profile.track = m1[1].trim();
+            const m2 = line.match(/전공 정보\s*[::：]\s*(.+)/); if (m2 && !isPlaceholder(m2[1])) result.profile.major = m2[1].trim();
+            const m3 = line.match(/인적 사항\s*[::：]\s*(.+)/); if (m3 && !isPlaceholder(m3[1])) result.profile.info = m3[1].trim();
+            const m4 = line.match(/현재 상태\s*[::：]\s*(.+)/); if (m4 && !isPlaceholder(m4[1])) result.profile.status = m4[1].trim();
         }
 
         if (currentSection === 'overview') {

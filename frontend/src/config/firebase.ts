@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 const env = (import.meta as any).env as Record<string, string>;
 
@@ -16,3 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 // Firebase Authentication
 export const auth = getAuth(app);
+// Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });

@@ -163,13 +163,13 @@ async def analyze_application(request: AIAnalysisRequest, user_data: dict = Depe
 
 [0. 서류 지원 현황 및 프로필]
 
-지원 트랙 : {applicant.get('track', '')} (Android, iOS, Web, Spring, Node, Design, Plan 중 택1)
+지원 트랙 : {applicant.get('track', '') or '미기입'}
 
-전공 정보 : {applicant.get('major', '')} ([전공 / 비전공])
+전공 정보 : {applicant.get('major', '') or '미기입'}
 
-인적 사항 : {applicant.get('grade', '')}학년 / {applicant.get('age', '')}세 ({applicant.get('applicantGender', '')})
+인적 사항 : {(str(applicant.get('grade', '')) + '학년') if applicant.get('grade') else '미기입'} / {(str(applicant.get('age', '')) + '세') if applicant.get('age') else '미기입'}{(' (' + applicant.get('applicantGender', '') + ')') if applicant.get('applicantGender') else ''}
 
-현재 상태 : {applicant.get('status', '')} (재학 / 휴학 / 졸업예정)
+현재 상태 : {applicant.get('status', '') or '미기입'}
 
 ---
 

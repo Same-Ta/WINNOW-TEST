@@ -122,7 +122,6 @@ export const ApplicantAnalytics = () => {
              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                  {[
                      { label: '합격', count: stats.passed, bg: 'bg-[#4ADE80]', text: 'text-white' },
-                     { label: '보류', count: stats.pending, bg: 'bg-[#FDE047]', text: 'text-yellow-800' },
                      { label: '불합격', count: stats.rejected, bg: 'bg-[#FCA5A5]', text: 'text-white' },
                      { label: '검토중', count: stats.reviewing, bg: 'bg-[#C4B5FD]', text: 'text-white' }
                  ].map(status => (

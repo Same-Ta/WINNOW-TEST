@@ -7,7 +7,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 // 인증 토큰 캠시로 중복 호출 방지
 let cachedToken: string | null = null;
 let tokenExpiry: number = 0;
-
+// 로그아웃 시 캐시 초기화 함수
+export const clearAuthCache = () => {
+  cachedToken = null;
+  tokenExpiry = 0;
+  cache.invalidateAll();
+};
 const getAuthToken = async (): Promise<string> => {
   const now = Date.now();
   if (cachedToken && now < tokenExpiry) {
@@ -81,6 +86,25 @@ export const authAPI = {
   
   getCurrentUser: async () => {
     return await apiRequest('/api/auth/me');
+  },
+
+  googleLogin: async (token?: string) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      const authToken = await getAuthToken();
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/api/auth/google-login`, {
+      method: 'POST',
+      headers,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(error.detail || `API 요청 실패: ${response.status}`);
+    }
+    return await response.json();
   },
 };
 

@@ -261,8 +261,8 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
                                 <div className="text-base font-bold text-gray-800">{stats.reviewing}건</div>
                             </div>
                             <div>
-                                <div className="text-[10px] text-gray-400 mb-0.5">보류</div>
-                                <div className="text-base font-bold text-gray-800">{stats.pending}건</div>
+                                <div className="text-[10px] text-gray-400 mb-0.5">합격</div>
+                                <div className="text-base font-bold text-gray-800">{stats.passed}건</div>
                             </div>
                             <div>
                                 <div className="text-[10px] text-gray-400 mb-0.5">총 지원자</div>
@@ -307,12 +307,12 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
                                 <div className="text-base font-bold text-gray-800">{stats.rejected}건</div>
                             </div>
                             <div>
-                                <div className="text-[10px] text-gray-400 mb-0.5">보류</div>
-                                <div className="text-base font-bold text-gray-800">{stats.pending}건</div>
-                            </div>
-                            <div>
                                 <div className="text-[10px] text-gray-400 mb-0.5">검토중</div>
                                 <div className="text-base font-bold text-gray-800">{stats.reviewing}건</div>
+                            </div>
+                            <div>
+                                <div className="text-[10px] text-gray-400 mb-0.5">이번달</div>
+                                <div className="text-base font-bold text-gray-800">{stats.thisMonth}건</div>
                             </div>
                         </div>
                     </div>
@@ -520,10 +520,6 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
                         <div className="flex justify-between items-center">
                             <span className="text-[13px] text-gray-600">불합격</span>
                             <span className="text-sm font-bold text-gray-800">{stats.rejected}건</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-[13px] text-gray-600">보류</span>
-                            <span className="text-sm font-bold text-gray-800">{stats.pending}건</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                             <span className="text-[13px] text-gray-600">이번달</span>

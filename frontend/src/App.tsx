@@ -24,6 +24,7 @@ import { AccountSettings } from '@/pages/Dashboard/AccountSettings';
 import { TeamManagement } from '@/pages/Dashboard/TeamManagement';
 import { auth } from '@/config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { clearAuthCache } from '@/services/api';
 
 const App = () => {
   // URL에서 공고 ID 추출 함수
@@ -92,15 +93,18 @@ const App = () => {
         // 로그인되어 있고 landing 페이지에 있으며 공고 상세 페이지가 아닐 때만 dashboard로 이동
         if (currentPage === 'landing' && !getJdIdFromUrl()) {
           setCurrentPage('dashboard');
+          window.history.replaceState({ page: 'dashboard' }, '');
         }
       } else {
         console.log('로그인 되지 않은 상태');
         setIsLoggedIn(false);
         setUserName('');
         setUserEmail('');
+        clearAuthCache();
         // 공고 상세 페이지가 아닌 경우에만 landing으로 이동
         if (currentPage !== 'jd-detail' && currentPage !== 'login' && currentPage !== 'signup') {
           setCurrentPage('landing');
+          window.history.replaceState({ page: 'landing' }, '');
         }
       }
       setInit(true);
@@ -125,25 +129,54 @@ const App = () => {
     
     // 해시 변경 감지
     window.addEventListener('hashchange', handleUrlChange);
-    // popstate 이벤트로 경로 변경 감지
-    window.addEventListener('popstate', handleUrlChange);
     
     return () => {
       window.removeEventListener('hashchange', handleUrlChange);
-      window.removeEventListener('popstate', handleUrlChange);
     };
   }, []);
 
+  // 브라우저 뒤로가기/앞으로가기 처리
+  useEffect(() => {
+    // 현재 페이지를 히스토리 초기 상태로 설정
+    window.history.replaceState({ page: currentPage }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      const state = e.state;
+      if (state?.page) {
+        setCurrentPage(state.page);
+        if (state.jdId) setSelectedJdId(state.jdId);
+        if (state.applicationId) setSelectedApplicationId(state.applicationId);
+      } else {
+        // URL에서 JD ID 확인 (공개 링크 지원)
+        const jdId = getJdIdFromUrl();
+        if (jdId) {
+          setSelectedJdId(jdId);
+          setCurrentPage('jd-detail');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 페이지 내비게이션 (브라우저 히스토리에 기록)
+  const navigateTo = (page: string) => {
+    window.history.pushState({ page }, '');
+    setCurrentPage(page);
+  };
+
   const handleLogin = () => {
     setIsLoggedIn(true);
-    setCurrentPage('dashboard');
+    navigateTo('dashboard');
   };
 
   const handleLogout = async () => {
     try {
+      clearAuthCache();
       await signOut(auth);
       setIsLoggedIn(false);
-      setCurrentPage('landing');
+      navigateTo('landing');
     } catch (error) {
       console.error('로그아웃 오류:', error);
     }
@@ -151,19 +184,20 @@ const App = () => {
 
   const handleNavigateToJD = (jdId: string) => {
     setSelectedJdId(jdId);
+    window.history.pushState({ page: 'jd-detail', jdId }, '');
     setCurrentPage('jd-detail');
   };
 
   const renderContent = () => {
     switch(currentPage) {
-        case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} onNavigateToJD={handleNavigateToJD} />;
-        case 'my-jds': return <MyJDsPage onNavigate={setCurrentPage} onNavigateToJD={handleNavigateToJD} />;
-        case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={setCurrentPage} />;
+        case 'dashboard': return <DashboardHome onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
+        case 'my-jds': return <MyJDsPage onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
+        case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />;
         case 'applicant-detail':
           return (
             <ApplicantDetail
               applicationId={selectedApplicationId!}
-              onBack={() => setCurrentPage('applicants')}
+              onBack={() => navigateTo('applicants')}
             />
           );
         case 'applicants': 
@@ -172,14 +206,15 @@ const App = () => {
               <h2 className="text-2xl font-bold mb-4">지원자 관리</h2>
               <ApplicantList onNavigateToApplicant={(id) => {
                 setSelectedApplicationId(id);
+                window.history.pushState({ page: 'applicant-detail', applicationId: id }, '');
                 setCurrentPage('applicant-detail');
               }} />
             </div>
           );
-        case 'chat': return <ChatInterface onNavigate={setCurrentPage} />;
-        case 'team': return <TeamManagement onNavigate={setCurrentPage} />;
+        case 'chat': return <ChatInterface onNavigate={navigateTo} />;
+        case 'team': return <TeamManagement onNavigate={navigateTo} />;
         case 'settings': return <AccountSettings />;
-        default: return <DashboardHome onNavigate={setCurrentPage} onNavigateToJD={(jdId) => console.log('Navigate to 공고:', jdId)} />;
+        default: return <DashboardHome onNavigate={navigateTo} onNavigateToJD={(jdId) => console.log('Navigate to 공고:', jdId)} />;
     }
   };
 
@@ -210,14 +245,14 @@ const App = () => {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <button 
-                onClick={() => setCurrentPage('my-jds')}
+                onClick={() => navigateTo('my-jds')}
                 className="px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 내 공고로 이동
               </button>
             ) : (
               <button 
-                onClick={() => setCurrentPage('login')}
+                onClick={() => navigateTo('login')}
                 className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 로그인
@@ -226,7 +261,7 @@ const App = () => {
           </div>
         </header>
         <main className="pt-16">
-          <JDDetail jdId={selectedJdId} onNavigate={setCurrentPage} />
+          <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />
         </main>
       </div>
     );
@@ -234,16 +269,16 @@ const App = () => {
 
   if (!isLoggedIn) {
       if (currentPage === 'signup') {
-        return <SignUpPage onLogin={handleLogin} onNavigateToLogin={() => setCurrentPage('login')} />;
+        return <SignUpPage onLogin={handleLogin} onNavigateToLogin={() => navigateTo('login')} />;
       }
       if (currentPage === 'login') {
         return <LoginPage 
           onLogin={handleLogin} 
-          onNavigateToSignUp={() => setCurrentPage('signup')}
-          onBackToLanding={() => setCurrentPage('landing')}
+          onNavigateToSignUp={() => navigateTo('signup')}
+          onBackToLanding={() => navigateTo('landing')}
         />;
       }
-      return <LandingPage onLogin={() => setCurrentPage('login')} />;
+      return <LandingPage onLogin={() => navigateTo('login')} />;
   }
 
   // Dashboard Layout
@@ -264,32 +299,32 @@ const App = () => {
                 icon={LayoutDashboard} 
                 label="대시보드" 
                 active={currentPage === 'dashboard'} 
-                onClick={() => setCurrentPage('dashboard')} 
+                onClick={() => navigateTo('dashboard')} 
             />
             <SidebarItem 
                 icon={FileText} 
                 label="내 공고 목록" 
                 active={currentPage === 'my-jds'} 
-                onClick={() => setCurrentPage('my-jds')} 
+                onClick={() => navigateTo('my-jds')} 
             />
             <SidebarItem 
                 icon={CheckCircle2} 
                 label="지원자 관리" 
                 active={currentPage === 'applicants'} 
-                onClick={() => setCurrentPage('applicants')} 
+                onClick={() => navigateTo('applicants')} 
             />
              <SidebarItem 
                 icon={MessageSquare} 
                 label="공고 생성 (AI)" 
                 active={currentPage === 'chat'} 
-                onClick={() => setCurrentPage('chat')} 
+                onClick={() => navigateTo('chat')} 
             />
         </div>
 
         <div className="px-3 pb-6">
              <div className="text-[11px] font-bold text-gray-400 px-4 mb-2 uppercase tracking-wider">내 정보</div>
-             <SidebarItem icon={Users} label="팀 관리" active={currentPage === 'team'} onClick={() => setCurrentPage('team')} />
-             <SidebarItem icon={Settings} label="계정 설정" active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')} />
+             <SidebarItem icon={Users} label="팀 관리" active={currentPage === 'team'} onClick={() => navigateTo('team')} />
+             <SidebarItem icon={Settings} label="계정 설정" active={currentPage === 'settings'} onClick={() => navigateTo('settings')} />
              <div className="mt-4 px-4 pt-5 border-t border-gray-50">
                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer group">
                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-200">{userInitials}</div>

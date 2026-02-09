@@ -8,27 +8,12 @@ class UserRegister(BaseModel):
     """
     User registration model.
     
-    Email is encrypted before saving to DB for additional privacy protection.
+    Email is stored as-is in Firebase Authentication.
+    No encryption needed for auth emails.
     """
     email: EmailStr
     password: str = Field(..., min_length=6)
     nickname: Optional[str] = None
-
-    @model_validator(mode='after')
-    def encrypt_email(self):
-        """
-        Automatically encrypt email before saving to DB.
-        Uses AES-256-GCM encryption.
-        """
-        encryptor = get_encryptor()
-        
-        try:
-            # Convert EmailStr to string and encrypt
-            self.email = encryptor.encrypt(str(self.email))
-        except Exception as e:
-            print(f"⚠️ Failed to encrypt email: {str(e)}")
-        
-        return self
 
 
 class UserResponse(BaseModel):

@@ -12,21 +12,24 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 async def register(user: UserRegister):
     """새 사용자를 등록합니다."""
     try:
+        # Firebase Authentication에 사용자 등록 (이메일 원본 사용)
+        email_str = str(user.email)
         user_record = firebase_auth.create_user(
-            email=user.email,
+            email=email_str,
             password=user.password,
-            display_name=user.nickname or user.email.split('@')[0]
+            display_name=user.nickname or email_str.split('@')[0]
         )
 
+        # Firestore에 사용자 정보 저장 (이메일 원본 사용)
         db.collection('users').document(user_record.uid).set({
-            'email': user.email,
-            'nickname': user.nickname or user.email.split('@')[0],
+            'email': email_str,
+            'nickname': user.nickname or email_str.split('@')[0],
             'createdAt': firebase_firestore.SERVER_TIMESTAMP
         })
 
         return {
             "uid": user_record.uid,
-            "email": user.email,
+            "email": email_str,
             "message": "User registered successfully"
         }
     except Exception as e:

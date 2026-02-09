@@ -1,32 +1,37 @@
 import { ChevronRight } from 'lucide-react';
 import { FONTS } from '@/constants/fonts';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { ChatDemo } from '@/components/landing/ChatDemo';
+import { ApplicationFlowDemo } from '@/components/landing/ApplicationFlowDemo';
+import { AIEvaluationDemo } from '@/components/landing/AIEvaluationDemo';
 
 interface LandingPageProps {
   onLogin: () => void;
 }
 
 export const LandingPage = ({ onLogin }: LandingPageProps) => {
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    if (!progressRef.current) return;
+    const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const progress = totalHeight > 0 ? (window.scrollY / totalHeight) * 100 : 0;
+    progressRef.current.style.width = `${progress}%`;
+  }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const progress = (window.scrollY / totalHeight) * 100;
-      setScrollProgress(progress);
-    };
-
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-y-auto scrollbar-hide" style={{ fontFamily: FONTS.sans }}>
       {/* Scroll Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gray-100 z-[60]">
         <div 
-          className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300 ease-out"
-          style={{ width: `${scrollProgress}%` }}
+          ref={progressRef}
+          className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-[width] duration-300 ease-out"
+          style={{ width: '0%' }}
         ></div>
       </div>
 
@@ -259,6 +264,64 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Chat Demo Section */}
+      <section className="py-28 px-4 bg-gradient-to-b from-white via-gray-50/50 to-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-blue-50/60 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold mb-5 tracking-wide">
+              LIVE DEMO
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">
+              AI와 대화하면 <span className="text-blue-600">공고가 완성</span>됩니다
+            </h2>
+            <p className="text-gray-500 text-base max-w-lg mx-auto">
+              채팅으로 동아리를 소개하면, AI가 자동으로 모집 공고를 생성합니다.
+              실제 동작을 확인해보세요.
+            </p>
+          </div>
+          <ChatDemo />
+        </div>
+      </section>
+
+      {/* Application Flow Demo Section */}
+      <section className="py-28 px-4 bg-gradient-to-b from-white via-gray-50/30 to-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-purple-50/40 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-block px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold mb-5 tracking-wide">
+              APPLICATION FLOW
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">
+              공고 게시부터 <span className="text-blue-600">지원자 관리</span>까지
+            </h2>
+            <p className="text-gray-500 text-base max-w-lg mx-auto">
+              공고를 게시하고 링크를 공유하면, 지원자가 체크리스트를 작성하고 대시보드에서 바로 확인됩니다.
+            </p>
+          </div>
+          <ApplicationFlowDemo />
+        </div>
+      </section>
+
+      {/* AI Evaluation Demo Section */}
+      <section className="py-28 px-4 bg-gradient-to-b from-white via-gray-50/30 to-white relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-green-50/40 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold mb-5 tracking-wide">
+              AI EVALUATION
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">
+              AI로 분석하고 <span className="text-blue-600">합격을 결정</span>하세요
+            </h2>
+            <p className="text-gray-500 text-base max-w-lg mx-auto">
+              지원자별 역량과 의지를 AI가 자동으로 평가합니다. 한눈에 비교하고 간편하게 합격/불합격을 관리하세요.
+            </p>
+          </div>
+          <AIEvaluationDemo />
         </div>
       </section>
 

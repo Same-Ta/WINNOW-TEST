@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -11,20 +11,32 @@ import {
 import { FONTS } from '@/constants/fonts';
 import { FunnelCSS } from '@/components/common/FunnelCSS';
 import { SidebarItem } from '@/components/common/SidebarItem';
-import { LandingPage } from '@/pages/LandingPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { SignUpPage } from '@/pages/SignUpPage';
-import { DashboardHome } from '@/pages/Dashboard/DashboardHome';
-import { JDDetail } from '@/pages/Dashboard/JDDetail';
-import { ApplicantList } from '@/pages/Dashboard/ApplicantList';
-import { ApplicantDetail } from '@/pages/Dashboard/ApplicantDetail';
-import { ChatInterface } from '@/pages/Dashboard/ChatInterface';
-import { MyJDsPage } from '@/pages/Dashboard/MyJDsPage';
-import { AccountSettings } from '@/pages/Dashboard/AccountSettings';
-import { TeamManagement } from '@/pages/Dashboard/TeamManagement';
 import { auth } from '@/config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { clearAuthCache } from '@/services/api';
+
+// Lazy load all page components for code splitting
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignUpPage = lazy(() => import('@/pages/SignUpPage').then(m => ({ default: m.SignUpPage })));
+const DashboardHome = lazy(() => import('@/pages/Dashboard/DashboardHome').then(m => ({ default: m.DashboardHome })));
+const JDDetail = lazy(() => import('@/pages/Dashboard/JDDetail').then(m => ({ default: m.JDDetail })));
+const ApplicantList = lazy(() => import('@/pages/Dashboard/ApplicantList').then(m => ({ default: m.ApplicantList })));
+const ApplicantDetail = lazy(() => import('@/pages/Dashboard/ApplicantDetail').then(m => ({ default: m.ApplicantDetail })));
+const ChatInterface = lazy(() => import('@/pages/Dashboard/ChatInterface').then(m => ({ default: m.ChatInterface })));
+const MyJDsPage = lazy(() => import('@/pages/Dashboard/MyJDsPage').then(m => ({ default: m.MyJDsPage })));
+const AccountSettings = lazy(() => import('@/pages/Dashboard/AccountSettings').then(m => ({ default: m.AccountSettings })));
+const TeamManagement = lazy(() => import('@/pages/Dashboard/TeamManagement').then(m => ({ default: m.TeamManagement })));
+
+// Suspense fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+      <p className="text-gray-400 text-sm">불러오는 중...</p>
+    </div>
+  </div>
+);
 
 const App = () => {
   // URL에서 공고 ID 추출 함수
@@ -189,33 +201,36 @@ const App = () => {
   };
 
   const renderContent = () => {
-    switch(currentPage) {
-        case 'dashboard': return <DashboardHome onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
-        case 'my-jds': return <MyJDsPage onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
-        case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />;
-        case 'applicant-detail':
-          return (
-            <ApplicantDetail
-              applicationId={selectedApplicationId!}
-              onBack={() => navigateTo('applicants')}
-            />
-          );
-        case 'applicants': 
-          return (
-            <div className="space-y-4 max-w-[1200px] mx-auto">
-              <h2 className="text-2xl font-bold mb-4">지원자 관리</h2>
-              <ApplicantList onNavigateToApplicant={(id) => {
-                setSelectedApplicationId(id);
-                window.history.pushState({ page: 'applicant-detail', applicationId: id }, '');
-                setCurrentPage('applicant-detail');
-              }} />
-            </div>
-          );
-        case 'chat': return <ChatInterface onNavigate={navigateTo} />;
-        case 'team': return <TeamManagement onNavigate={navigateTo} />;
-        case 'settings': return <AccountSettings />;
-        default: return <DashboardHome onNavigate={navigateTo} onNavigateToJD={(jdId) => console.log('Navigate to 공고:', jdId)} />;
-    }
+    const content = (() => {
+      switch(currentPage) {
+          case 'dashboard': return <DashboardHome onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
+          case 'my-jds': return <MyJDsPage onNavigate={navigateTo} onNavigateToJD={handleNavigateToJD} />;
+          case 'jd-detail': return <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />;
+          case 'applicant-detail':
+            return (
+              <ApplicantDetail
+                applicationId={selectedApplicationId!}
+                onBack={() => navigateTo('applicants')}
+              />
+            );
+          case 'applicants': 
+            return (
+              <div className="space-y-4 max-w-[1200px] mx-auto">
+                <h2 className="text-2xl font-bold mb-4">지원자 관리</h2>
+                <ApplicantList onNavigateToApplicant={(id) => {
+                  setSelectedApplicationId(id);
+                  window.history.pushState({ page: 'applicant-detail', applicationId: id }, '');
+                  setCurrentPage('applicant-detail');
+                }} />
+              </div>
+            );
+          case 'chat': return <ChatInterface onNavigate={navigateTo} />;
+          case 'team': return <TeamManagement onNavigate={navigateTo} />;
+          case 'settings': return <AccountSettings />;
+          default: return <DashboardHome onNavigate={navigateTo} onNavigateToJD={(jdId) => console.log('Navigate to 공고:', jdId)} />;
+      }
+    })();
+    return <Suspense fallback={<PageLoader />}>{content}</Suspense>;
   };
 
   // 초기화 중 로딩 화면
@@ -261,7 +276,9 @@ const App = () => {
           </div>
         </header>
         <main className="pt-16">
-          <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />
+          <Suspense fallback={<PageLoader />}>
+            <JDDetail jdId={selectedJdId} onNavigate={navigateTo} />
+          </Suspense>
         </main>
       </div>
     );
@@ -269,16 +286,16 @@ const App = () => {
 
   if (!isLoggedIn) {
       if (currentPage === 'signup') {
-        return <SignUpPage onLogin={handleLogin} onNavigateToLogin={() => navigateTo('login')} />;
+        return <Suspense fallback={<PageLoader />}><SignUpPage onLogin={handleLogin} onNavigateToLogin={() => navigateTo('login')} /></Suspense>;
       }
       if (currentPage === 'login') {
-        return <LoginPage 
+        return <Suspense fallback={<PageLoader />}><LoginPage 
           onLogin={handleLogin} 
           onNavigateToSignUp={() => navigateTo('signup')}
           onBackToLanding={() => navigateTo('landing')}
-        />;
+        /></Suspense>;
       }
-      return <LandingPage onLogin={() => navigateTo('login')} />;
+      return <Suspense fallback={<PageLoader />}><LandingPage onLogin={() => navigateTo('login')} /></Suspense>;
   }
 
   // Dashboard Layout

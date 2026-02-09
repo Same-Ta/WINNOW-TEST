@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Filter, Download, X, Sparkles, FileText, Trash2, Search, Calendar, ChevronDown, Users } from 'lucide-react';
 import { auth } from '@/config/firebase';
-import * as XLSX from 'xlsx';
 import { applicationAPI, jdAPI } from '@/services/api';
 import { AIAnalysisDashboard } from '@/components/ai/AIAnalysisComponents';
 
@@ -49,8 +48,8 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
     const statusDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        fetchApplications();
-        fetchJDs();
+        // 병렬 로딩으로 초기 로딩 속도 개선
+        Promise.all([fetchApplications(), fetchJDs()]);
     }, []);
 
     // 상태 드롭다운 외부 클릭 감지
@@ -74,8 +73,8 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
             }
 
             console.log('지원서 불러오는 중...');
-            // 캐시를 사용하지 않고 항상 서버에서 최신 데이터를 가져옴 (복호화된 데이터)
-            const applicationsData = await applicationAPI.getAll(false);
+            // 캐시가 있으면 우선 사용하여 빠르게 표시 (3분 캐시)
+            const applicationsData = await applicationAPI.getAll(true);
 
             // 클라이언트 측에서 날짜순 정렬
             applicationsData.sort((a: any, b: any) => {
@@ -213,8 +212,8 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
         setAiSummary('');
     };
 
-    // 엑셀 다운로드 함수
-    const handleExcelDownload = () => {
+    // 엑셀 다운로드 함수 (xlsx를 동적으로 임포트하여 초기 번들 크기 감소)
+    const handleExcelDownload = async () => {
         // 보안 경고
         const confirmed = confirm(
             '⚠️ 보안 경고\n\n' +
@@ -228,6 +227,9 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
         if (!confirmed) return;
         
         try {
+            // xlsx 라이브러리를 필요할 때만 동적 임포트 (~500KB 절약)
+            const XLSX = await import('xlsx');
+
             // 엑셀로 변환할 데이터 준비
             const excelData = filteredApplications.map((app, index) => {
                 // 자격요건 답변 정리

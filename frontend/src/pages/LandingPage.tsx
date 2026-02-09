@@ -279,7 +279,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
               AI와 대화하면 <span className="text-blue-600">공고가 완성</span>됩니다
             </h2>
             <p className="text-gray-500 text-base max-w-lg mx-auto">
-              채팅으로 동아리를 소개하면, AI가 자동으로 모집 공고를 생성합니다.
+              채팅만으로, AI가 자동으로 모집 공고를 생성합니다.
               실제 동작을 확인해보세요.
             </p>
           </div>

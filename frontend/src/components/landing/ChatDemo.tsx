@@ -328,7 +328,7 @@ export const ChatDemo = () => {
             </div>
             {/* Name */}
             <h3 className={`font-bold text-[17px] mb-1 transition-all duration-500 ${jd.teamName ? 'text-gray-900' : 'text-gray-400'}`}>
-              {jd.teamName || '동아리 이름'}
+              {jd.teamName || '그룹 이름'}
             </h3>
             <p className={`text-[12px] font-semibold mb-6 transition-all duration-500 ${jd.jobRole ? 'text-gray-500' : 'text-gray-400'}`}>
               {jd.jobRole || '모집 분야'}
@@ -400,7 +400,7 @@ export const ChatDemo = () => {
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9a1 1 0 112 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z" />
                         </svg>
-                        동아리 소개
+                        그룹 소개
                       </h4>
                       <p className="text-[14px] text-gray-700 leading-relaxed">{jd.description}</p>
                     </div>

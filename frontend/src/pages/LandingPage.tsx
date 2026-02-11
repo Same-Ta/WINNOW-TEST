@@ -1,57 +1,9 @@
 import { ChevronRight } from 'lucide-react';
 import { FONTS } from '@/constants/fonts';
-import { useEffect, useRef, useCallback, useState, Suspense } from 'react';
-import React from 'react';
-
-// 동적 임포트를 위한 Lazy Loading
-const LazyComponent = ({ 
-  children, 
-  fallback = <div className="h-[420px] bg-gray-50 rounded-2xl animate-pulse flex items-center justify-center"><span className="text-gray-400">로딩 중...</span></div> 
-}: { 
-  children: React.ComponentType, 
-  fallback?: React.ReactNode 
-}) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [Component, setComponent] = useState<React.ComponentType | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isVisible) {
-          setIsVisible(true);
-          setComponent(() => children);
-        }
-      },
-      { threshold: 0.1, rootMargin: '100px' }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, [children, isVisible]);
-
-  return (
-    <div ref={ref}>
-      {Component ? <Component /> : fallback}
-    </div>
-  );
-};
-
-// 동적 임포트 함수들
-const createLazyChatDemo = () => {
-  return React.lazy(() => import('@/components/landing/ChatDemo').then(m => ({ default: m.ChatDemo })));
-};
-
-const createLazyApplicationFlowDemo = () => {
-  return React.lazy(() => import('@/components/landing/ApplicationFlowDemo').then(m => ({ default: m.ApplicationFlowDemo })));
-};
-
-const createLazyAIEvaluationDemo = () => {
-  return React.lazy(() => import('@/components/landing/AIEvaluationDemo').then(m => ({ default: m.AIEvaluationDemo })));
-};
+import { useEffect, useRef, useCallback } from 'react';
+import { ChatDemo } from '@/components/landing/ChatDemo';
+import { ApplicationFlowDemo } from '@/components/landing/ApplicationFlowDemo';
+import { AIEvaluationDemo } from '@/components/landing/AIEvaluationDemo';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -62,33 +14,14 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
 
   const handleScroll = useCallback(() => {
     if (!progressRef.current) return;
-    
-    // RAF로 성능 최적화
-    requestAnimationFrame(() => {
-      const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const progress = totalHeight > 0 ? (window.scrollY / totalHeight) * 100 : 0;
-      if (progressRef.current) {
-        progressRef.current.style.width = `${progress}%`;
-      }
-    });
+    const totalHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const progress = totalHeight > 0 ? (window.scrollY / totalHeight) * 100 : 0;
+    progressRef.current.style.width = `${progress}%`;
   }, []);
 
   useEffect(() => {
-    // Throttle을 위한 flag
-    let ticking = false;
-    
-    const throttledScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', throttledScroll, { passive: true });
-    return () => window.removeEventListener('scroll', throttledScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   return (
@@ -351,9 +284,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
             </p>
           </div>
           <div style={{ transform: 'scale(0.75)', transformOrigin: 'top center' }}>
-            <Suspense fallback={<div className="h-[500px] bg-gray-50 rounded-2xl animate-pulse flex items-center justify-center"><span className="text-gray-400">채팅 데모 로딩 중...</span></div>}>
-              <LazyComponent children={createLazyChatDemo()} />
-            </Suspense>
+            <ChatDemo />
           </div>
         </div>
       </section>
@@ -374,9 +305,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
             </p>
           </div>
           <div style={{ transform: 'scale(0.75)', transformOrigin: 'top center' }}>
-            <Suspense fallback={<div className="h-[500px] bg-gray-50 rounded-2xl animate-pulse flex items-center justify-center"><span className="text-gray-400">지원 과정 데모 로딩 중...</span></div>}>
-              <LazyComponent children={createLazyApplicationFlowDemo()} />
-            </Suspense>
+            <ApplicationFlowDemo />
           </div>
         </div>
       </section>
@@ -397,9 +326,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
             </p>
           </div>
           <div style={{ transform: 'scale(0.75)', transformOrigin: 'top center' }}>
-            <Suspense fallback={<div className="h-[500px] bg-gray-50 rounded-2xl animate-pulse flex items-center justify-center"><span className="text-gray-400">AI 평가 데모 로딩 중...</span></div>}>
-              <LazyComponent children={createLazyAIEvaluationDemo()} />
-            </Suspense>
+            <AIEvaluationDemo />
           </div>
         </div>
       </section>

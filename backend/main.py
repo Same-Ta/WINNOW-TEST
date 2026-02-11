@@ -6,11 +6,7 @@ from dotenv import load_dotenv
 # .env 파일 로드 (가장 먼저 실행)
 load_dotenv()
 
-# Config 초기화 (Firebase, Gemini)
-from config import firebase  # noqa: E402, F401
-from config import gemini  # noqa: E402, F401
-
-# 라우터 임포트
+# 라우터 임포트 (Config는 지연 로딩)
 from routes.auth import router as auth_router
 from routes.jds import router as jds_router
 from routes.applications import router as applications_router
@@ -60,6 +56,12 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+
+@app.get("/keepalive")
+def keep_alive():
+    """콜드 스타트 방지용 엔드포인트"""
+    return {"status": "alive", "timestamp": datetime.now().isoformat()}
 
 
 if __name__ == "__main__":

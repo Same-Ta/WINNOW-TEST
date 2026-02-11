@@ -6,8 +6,8 @@ import uuid
 import io
 import google.generativeai as genai
 
-from config.firebase import db, bucket
-from config.gemini import GEMINI_API_KEY
+from config.firebase import get_db, bucket
+import os
 from dependencies.auth import verify_token
 from models.schemas import ApplicationCreate, ApplicationUpdate, ApplicationResponse, AIAnalysisRequest, SaveAnalysisRequest
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/applications", tags=["Applications"])
 async def create_application(application: ApplicationCreate):
     """새 지원서를 제출합니다."""
     try:
-        jd_doc = db.collection('jds').document(application.jdId).get()
+        jd_doc = get_db().collection('jds').document(application.jdId).get()
         if not jd_doc.exists:
             raise HTTPException(status_code=404, detail="JD not found")
 
@@ -30,7 +30,7 @@ async def create_application(application: ApplicationCreate):
         app_data['appliedAt'] = firebase_firestore.SERVER_TIMESTAMP
         app_data['status'] = 'pending'
 
-        doc_ref = db.collection('applications').document()
+        doc_ref = get_db().collection('applications').document()
         doc_ref.set(app_data)
 
         return {"id": doc_ref.id, "message": "Application submitted successfully"}
@@ -84,7 +84,7 @@ async def download_portfolio(application_id: str, user_data: dict = Depends(veri
             raise HTTPException(status_code=500, detail="Storage가 설정되지 않았습니다.")
         
         # 지원서 조회
-        app_doc = db.collection('applications').document(application_id).get()
+        app_doc = get_db().collection('applications').document(application_id).get()
         if not app_doc.exists:
             raise HTTPException(status_code=404, detail="지원서를 찾을 수 없습니다.")
         
@@ -119,6 +119,7 @@ async def download_portfolio(application_id: str, user_data: dict = Depends(veri
 async def analyze_application(request: AIAnalysisRequest, user_data: dict = Depends(verify_token)):
     """지원자를 AI로 분석합니다."""
     try:
+        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
             raise HTTPException(status_code=500, detail="Gemini API key not configured")
 
@@ -127,7 +128,7 @@ async def analyze_application(request: AIAnalysisRequest, user_data: dict = Depe
             app_id = request.applicantData.get('id') or request.applicantData.get('applicationId')
             print(f"🔄 Fetching and decrypting application {app_id} for AI analysis...")
             
-            doc = db.collection('applications').document(app_id).get()
+            doc = get_db().collection('applications').document(app_id).get()
             if not doc.exists:
                 raise HTTPException(status_code=404, detail="Application not found")
             
@@ -291,7 +292,7 @@ async def get_applications(user_data: dict = Depends(verify_token)):
         seen_ids = set()
 
         # 1. 자신이 recruiterId인 지원서
-        own_ref = db.collection('applications').where('recruiterId', '==', uid)
+        own_ref = get_db().collection('applications').where('recruiterId', '==', uid)
         for doc in own_ref.stream():
             app_data = doc.to_dict()
             app_data['applicationId'] = doc.id
@@ -316,9 +317,9 @@ async def get_applications(user_data: dict = Depends(verify_token)):
             seen_ids.add(doc.id)
 
         # 2. 협업자로 초대된 JD의 지원서
-        collab_jds_ref = db.collection('jds').where('collaboratorIds', 'array_contains', uid)
+        collab_jds_ref = get_db().collection('jds').where('collaboratorIds', 'array_contains', uid)
         for jd_doc in collab_jds_ref.stream():
-            jd_apps_ref = db.collection('applications').where('jdId', '==', jd_doc.id)
+            jd_apps_ref = get_db().collection('applications').where('jdId', '==', jd_doc.id)
             for doc in jd_apps_ref.stream():
                 if doc.id not in seen_ids:
                     app_data = doc.to_dict()
@@ -353,7 +354,7 @@ async def get_application(application_id: str, user_data: dict = Depends(verify_
     """특정 지원서를 반환합니다."""
     try:
         uid = user_data['uid']
-        doc = db.collection('applications').document(application_id).get()
+        doc = get_db().collection('applications').document(application_id).get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Application not found")
 
@@ -362,7 +363,7 @@ async def get_application(application_id: str, user_data: dict = Depends(verify_
         # 소유자 또는 해당 JD 협업자인지 확인
         is_authorized = app_data.get('recruiterId') == uid
         if not is_authorized and app_data.get('jdId'):
-            jd_doc = db.collection('jds').document(app_data['jdId']).get()
+            jd_doc = get_db().collection('jds').document(app_data['jdId']).get()
             if jd_doc.exists:
                 jd_data = jd_doc.to_dict()
                 is_authorized = uid in (jd_data.get('collaboratorIds') or [])
@@ -398,7 +399,7 @@ async def update_application(application_id: str, application: ApplicationUpdate
     """지원서 상태를 수정합니다."""
     try:
         uid = user_data['uid']
-        doc_ref = db.collection('applications').document(application_id)
+        doc_ref = get_db().collection('applications').document(application_id)
         doc = doc_ref.get()
 
         if not doc.exists:
@@ -409,7 +410,7 @@ async def update_application(application_id: str, application: ApplicationUpdate
         # 소유자 또는 해당 JD 협업자인지 확인
         is_authorized = app_data.get('recruiterId') == uid
         if not is_authorized and app_data.get('jdId'):
-            jd_doc = db.collection('jds').document(app_data['jdId']).get()
+            jd_doc = get_db().collection('jds').document(app_data['jdId']).get()
             if jd_doc.exists:
                 jd_data = jd_doc.to_dict()
                 is_authorized = uid in (jd_data.get('collaboratorIds') or [])
@@ -432,7 +433,7 @@ async def update_application(application_id: str, application: ApplicationUpdate
 async def delete_application(application_id: str, user_data: dict = Depends(verify_token)):
     """지원서를 삭제합니다."""
     try:
-        doc_ref = db.collection('applications').document(application_id)
+        doc_ref = get_db().collection('applications').document(application_id)
         doc = doc_ref.get()
 
         if not doc.exists:
@@ -454,7 +455,7 @@ async def delete_application(application_id: str, user_data: dict = Depends(veri
 async def save_analysis(application_id: str, request: SaveAnalysisRequest, user_data: dict = Depends(verify_token)):
     """AI 분석 결과를 저장합니다."""
     try:
-        doc_ref = db.collection('applications').document(application_id)
+        doc_ref = get_db().collection('applications').document(application_id)
         doc = doc_ref.get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Application not found")
@@ -474,7 +475,7 @@ async def save_analysis(application_id: str, request: SaveAnalysisRequest, user_
 async def get_analysis(application_id: str, user_data: dict = Depends(verify_token)):
     """저장된 AI 분석 결과를 반환합니다."""
     try:
-        doc = db.collection('applications').document(application_id).get()
+        doc = get_db().collection('applications').document(application_id).get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Application not found")
 

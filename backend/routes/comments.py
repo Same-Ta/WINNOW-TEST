@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 
-from config.firebase import db
+from config.firebase import get_db
 from dependencies.auth import verify_token
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def create_comment(comment: CommentCreate, user_data: dict = Depends(verif
 
         logger.info(f"[Comment] Creating comment for app={comment.applicationId}, posX={comment.posX}, posY={comment.posY}, parentId={comment.parentId}")
 
-        doc_ref = db.collection("comments").document()
+        doc_ref = get_db().collection("comments").document()
         doc_ref.set(comment_data)
 
         logger.info(f"[Comment] Saved successfully with id={doc_ref.id}")
@@ -60,7 +60,7 @@ async def get_comments(application_id: str, user_data: dict = Depends(verify_tok
     """특정 지원서의 모든 코멘트를 반환합니다."""
     try:
         comments_ref = (
-            db.collection("comments")
+            get_db().collection("comments")
             .where(filter=FieldFilter("applicationId", "==", application_id))
         )
         comments = []
@@ -92,7 +92,7 @@ async def update_comment(
 ):
     """코멘트를 수정합니다."""
     try:
-        doc_ref = db.collection("comments").document(comment_id)
+        doc_ref = get_db().collection("comments").document(comment_id)
         doc = doc_ref.get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Comment not found")
@@ -115,7 +115,7 @@ async def update_comment(
 async def delete_comment(comment_id: str, user_data: dict = Depends(verify_token)):
     """코멘트를 삭제합니다."""
     try:
-        doc_ref = db.collection("comments").document(comment_id)
+        doc_ref = get_db().collection("comments").document(comment_id)
         doc = doc_ref.get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Comment not found")
@@ -136,7 +136,7 @@ async def delete_comment(comment_id: str, user_data: dict = Depends(verify_token
 async def resolve_comment(comment_id: str, user_data: dict = Depends(verify_token)):
     """코멘트 스레드를 해결 처리합니다."""
     try:
-        doc_ref = db.collection("comments").document(comment_id)
+        doc_ref = get_db().collection("comments").document(comment_id)
         doc = doc_ref.get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Comment not found")

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import auth as firebase_auth, firestore as firebase_firestore
 
-from config.firebase import db
+from config.firebase import get_db
 from dependencies.auth import verify_token
 from models.schemas import UserRegister
 
@@ -21,7 +21,7 @@ async def register(user: UserRegister):
         )
 
         # Firestore에 사용자 정보 저장 (이메일 원본 사용)
-        db.collection('users').document(user_record.uid).set({
+        get_db().collection('users').document(user_record.uid).set({
             'email': email_str,
             'nickname': user.nickname or email_str.split('@')[0],
             'createdAt': firebase_firestore.SERVER_TIMESTAMP
@@ -45,7 +45,7 @@ async def google_login(user_data: dict = Depends(verify_token)):
         name = user_data.get('name', '') or email.split('@')[0]
         picture = user_data.get('picture', '')
 
-        user_ref = db.collection('users').document(uid)
+        user_ref = get_db().collection('users').document(uid)
         user_doc = user_ref.get()
 
         if not user_doc.exists:
@@ -78,7 +78,7 @@ async def google_login(user_data: dict = Depends(verify_token)):
 async def get_current_user(user_data: dict = Depends(verify_token)):
     """현재 로그인한 사용자 정보를 반환합니다."""
     try:
-        user_doc = db.collection('users').document(user_data['uid']).get()
+        user_doc = get_db().collection('users').document(user_data['uid']).get()
         if user_doc.exists:
             return {"uid": user_data['uid'], **user_doc.to_dict()}
         return {"uid": user_data['uid'], "email": user_data.get('email')}

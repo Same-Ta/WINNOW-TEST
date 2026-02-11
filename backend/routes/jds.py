@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import firestore as firebase_firestore
 
-from config.firebase import db
+from config.firebase import get_db
 from dependencies.auth import verify_token
 from models.schemas import JDCreate, JDUpdate
 
@@ -17,7 +17,7 @@ async def create_jd(jd: JDCreate, user_data: dict = Depends(verify_token)):
         jd_data['createdAt'] = firebase_firestore.SERVER_TIMESTAMP
         jd_data['updatedAt'] = firebase_firestore.SERVER_TIMESTAMP
 
-        doc_ref = db.collection('jds').document()
+        doc_ref = get_db().collection('jds').document()
         doc_ref.set(jd_data)
 
         return {"id": doc_ref.id, "message": "JD created successfully"}
@@ -35,7 +35,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
         seen_ids = set()
 
         # 1. 자신이 소유한 JD
-        own_ref = db.collection('jds').where('userId', '==', uid)
+        own_ref = get_db().collection('jds').where('userId', '==', uid)
         for doc in own_ref.stream():
             jd_data = doc.to_dict()
             jd_data['id'] = doc.id
@@ -44,7 +44,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
             seen_ids.add(doc.id)
 
         # 2. 협업자로 초대된 JD (UID 기반)
-        collab_ref = db.collection('jds').where('collaboratorIds', 'array_contains', uid)
+        collab_ref = get_db().collection('jds').where('collaboratorIds', 'array_contains', uid)
         for doc in collab_ref.stream():
             if doc.id not in seen_ids:
                 jd_data = doc.to_dict()
@@ -55,7 +55,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
 
         # 3. 이메일로 초대되었지만 UID가 아직 연결 안 된 JD (폴백)
         if user_email:
-            email_ref = db.collection('jds').where('collaboratorEmails', 'array_contains', user_email)
+            email_ref = get_db().collection('jds').where('collaboratorEmails', 'array_contains', user_email)
             for doc in email_ref.stream():
                 if doc.id not in seen_ids:
                     jd_data = doc.to_dict()
@@ -90,7 +90,7 @@ async def get_jds(user_data: dict = Depends(verify_token)):
 async def get_jd(jd_id: str):
     """특정 JD를 반환합니다."""
     try:
-        doc = db.collection('jds').document(jd_id).get()
+        doc = get_db().collection('jds').document(jd_id).get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="JD not found")
         jd_data = doc.to_dict()
@@ -106,7 +106,7 @@ async def get_jd(jd_id: str):
 async def update_jd(jd_id: str, jd: JDUpdate, user_data: dict = Depends(verify_token)):
     """JD를 수정합니다."""
     try:
-        doc_ref = db.collection('jds').document(jd_id)
+        doc_ref = get_db().collection('jds').document(jd_id)
         doc = doc_ref.get()
 
         if not doc.exists:
@@ -130,7 +130,7 @@ async def update_jd(jd_id: str, jd: JDUpdate, user_data: dict = Depends(verify_t
 async def delete_jd(jd_id: str, user_data: dict = Depends(verify_token)):
     """JD를 삭제합니다."""
     try:
-        doc_ref = db.collection('jds').document(jd_id)
+        doc_ref = get_db().collection('jds').document(jd_id)
         doc = doc_ref.get()
 
         if not doc.exists:

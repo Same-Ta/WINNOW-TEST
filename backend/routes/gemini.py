@@ -3,7 +3,7 @@ import google.generativeai as genai
 import json
 import re
 
-from config.gemini import GEMINI_API_KEY
+import os
 from dependencies.auth import verify_token
 from models.schemas import GeminiChatRequest
 
@@ -14,6 +14,7 @@ router = APIRouter(prefix="/api/gemini", tags=["Gemini AI"])
 async def gemini_chat(request: GeminiChatRequest, user_data: dict = Depends(verify_token)):
     """Gemini AI와 채팅하여 JD를 생성합니다."""
     try:
+        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
             raise HTTPException(
                 status_code=500,

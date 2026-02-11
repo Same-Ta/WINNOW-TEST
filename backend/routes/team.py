@@ -3,7 +3,7 @@ from firebase_admin import firestore as firebase_firestore, auth as firebase_aut
 from pydantic import BaseModel
 from datetime import datetime, timezone
 
-from config.firebase import db
+from config.firebase import get_db
 from dependencies.auth import verify_token
 
 router = APIRouter(prefix="/api/team", tags=["Team"])
@@ -25,7 +25,7 @@ async def invite_collaborator(invite: JDInvite, user_data: dict = Depends(verify
         jd_id = invite.jdId
 
         # JD 조회 & 소유자 확인
-        jd_ref = db.collection("jds").document(jd_id)
+        jd_ref = get_db().collection("jds").document(jd_id)
         jd_doc = jd_ref.get()
         if not jd_doc.exists:
             raise HTTPException(status_code=404, detail="공고를 찾을 수 없습니다.")
@@ -90,7 +90,7 @@ async def get_collaborators(jd_id: str, user_data: dict = Depends(verify_token))
     try:
         uid = user_data["uid"]
 
-        jd_doc = db.collection("jds").document(jd_id).get()
+        jd_doc = get_db().collection("jds").document(jd_id).get()
         if not jd_doc.exists:
             raise HTTPException(status_code=404, detail="공고를 찾을 수 없습니다.")
 
@@ -142,7 +142,7 @@ async def remove_collaborator(jd_id: str, member_email: str, user_data: dict = D
     try:
         uid = user_data["uid"]
 
-        jd_ref = db.collection("jds").document(jd_id)
+        jd_ref = get_db().collection("jds").document(jd_id)
         jd_doc = jd_ref.get()
         if not jd_doc.exists:
             raise HTTPException(status_code=404, detail="공고를 찾을 수 없습니다.")

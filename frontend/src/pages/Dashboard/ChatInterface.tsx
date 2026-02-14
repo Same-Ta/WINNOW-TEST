@@ -1,4 +1,4 @@
-import { ChevronRight, MessageSquare, X, FileText } from 'lucide-react';
+import { ChevronRight, MessageSquare, X, FileText, ChevronsLeft, ChevronsRight, ChevronsUp, ChevronsDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { maskSensitiveData } from '../../utils/security';
 import { auth } from '../../config/firebase';
@@ -102,13 +102,23 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
     
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<ChatMessage[]>([getTypeSelectionMessage()]);
+    const [messageHistory, setMessageHistory] = useState<ChatMessage[][]>([[getTypeSelectionMessage()]]); // 되돌리기용 히스토리
     const [waitingForCustomInput, setWaitingForCustomInput] = useState(false);
     const [currentJD, setCurrentJD] = useState<CurrentJD>(getDefaultJD('club'));
     const [isLoading, setIsLoading] = useState(false);
     const [typingText, setTypingText] = useState<{ [key: string]: string }>({});
+    const [isTypingAI, setIsTypingAI] = useState(false); // AI 응답 타이핑 중 상태
     const chatEndRef = useRef<HTMLDivElement>(null);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editedJD, setEditedJD] = useState<CurrentJD>(currentJD);
+    
+    // 채팅방 크기 조절 상태
+    const [chatWidth, setChatWidth] = useState(35); // 퍼센트 단위
+    const [chatHeight, setChatHeight] = useState(85); // vh 단위
+    const [isResizing, setIsResizing] = useState(false);
+    const [isCornerResizing, setIsCornerResizing] = useState(false);
+    const resizeRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     
     // 지원 양식 커스터마이징 모달 상태
     const [showApplicationFieldsModal, setShowApplicationFieldsModal] = useState(false);
@@ -179,6 +189,63 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // 크기 조절 핸들러
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isResizing) {
+                const container = resizeRef.current?.parentElement;
+                if (!container) return;
+                
+                const containerRect = container.getBoundingClientRect();
+                const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+                
+                // 최소 25%, 최대 60%로 제한
+                if (newWidth >= 25 && newWidth <= 60) {
+                    setChatWidth(newWidth);
+                }
+            }
+            
+            if (isCornerResizing) {
+                const container = containerRef.current;
+                if (!container) return;
+                
+                const containerRect = container.getBoundingClientRect();
+                
+                // 가로 크기 조절
+                const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+                if (newWidth >= 25 && newWidth <= 60) {
+                    setChatWidth(newWidth);
+                }
+                
+                // 세로 크기 조절
+                const windowHeight = window.innerHeight;
+                const newHeight = ((e.clientY - containerRect.top) / windowHeight) * 100;
+                if (newHeight >= 50 && newHeight <= 95) {
+                    setChatHeight(newHeight);
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            setIsCornerResizing(false);
+        };
+
+        if (isResizing || isCornerResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = isCornerResizing ? 'nwse-resize' : 'col-resize';
+            document.body.style.userSelect = 'none';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, isCornerResizing]);
+
     // 타이핑 애니메이션 효과
     const typeText = (key: string, text: string, speed: number = 30) => {
         let index = 0;
@@ -195,6 +262,56 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 });
             }
         }, speed);
+    };
+
+    // AI 메시지 타이핑 효과 (스트리밍)
+    const typeAIMessage = (message: ChatMessage) => {
+        setIsTypingAI(true);
+        const text = message.text;
+        let index = 0;
+        const speed = 20; // 타이핑 속도 (ms)
+        
+        // 임시 메시지 추가 (빈 텍스트로 시작)
+        const tempMessage: ChatMessage = {
+            ...message,
+            text: ''
+        };
+        setMessages(prev => [...prev, tempMessage]);
+        
+        const interval = setInterval(() => {
+            if (index <= text.length) {
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = {
+                        ...tempMessage,
+                        text: text.substring(0, index)
+                    };
+                    return newMessages;
+                });
+                index++;
+            } else {
+                clearInterval(interval);
+                setIsTypingAI(false);
+                // 최종 메시지로 업데이트
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = message;
+                    return newMessages;
+                });
+            }
+        }, speed);
+    };
+
+    // 되돌리기 기능
+    const handleUndo = () => {
+        if (messageHistory.length <= 1) {
+            alert('되돌릴 메시지가 없습니다.');
+            return;
+        }
+        
+        const newHistory = messageHistory.slice(0, -1);
+        setMessageHistory(newHistory);
+        setMessages(newHistory[newHistory.length - 1]);
     };
 
     // 편집 모드 시작
@@ -415,7 +532,15 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
             setJdType(newType);
             setCurrentJD(getDefaultJD(newType));
             const followUpMessage = getDefaultMessage(newType);
-            setMessages(prev => [...prev, followUpMessage]);
+            
+            // 스트리밍 효과로 메시지 표시
+            typeAIMessage(followUpMessage);
+            
+            // 메시지 히스토리에 추가
+            setTimeout(() => {
+                setMessageHistory(prev => [...prev, [...messages, userMessage, followUpMessage]]);
+            }, followUpMessage.text.length * 20 + 100);
+            
             setIsLoading(false);
             return;
         }
@@ -427,7 +552,15 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 text: '구체적으로 어떻게 하시나요? 자유롭게 답변해주세요.',
                 timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
             };
-            setMessages(prev => [...prev, followUpMessage]);
+            
+            // 스트리밍 효과로 메시지 표시
+            typeAIMessage(followUpMessage);
+            
+            // 메시지 히스토리에 추가
+            setTimeout(() => {
+                setMessageHistory(prev => [...prev, [...messages, userMessage, followUpMessage]]);
+            }, followUpMessage.text.length * 20 + 100);
+            
             setWaitingForCustomInput(true);
             setIsLoading(false);
             return;
@@ -468,7 +601,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 aiOptions = undefined;
             }
             
-            // 1. 채팅 메시지 추가: aiResponse 필드 사용
+            // 1. 채팅 메시지 추가: aiResponse 필드 사용 (스트리밍 효과 적용)
             const chatMessageText = response.aiResponse || '응답을 받았습니다.';
             
             const aiMessage: ChatMessage = {
@@ -478,7 +611,13 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 options: aiOptions
             };
             
-            setMessages(prev => [...prev, aiMessage]);
+            // 스트리밍 효과로 AI 메시지 표시
+            typeAIMessage(aiMessage);
+            
+            // 메시지 히스토리에 추가
+            setTimeout(() => {
+                setMessageHistory(prev => [...prev, [...messages, userMessage, aiMessage]]);
+            }, chatMessageText.length * 20 + 100); // 타이핑이 끝난 후 히스토리 업데이트
             
             // 2. 미리보기 업데이트: 공고 데이터가 있으면 기존 상태와 병합
             if (response.jdData && typeof response.jdData === 'object') {
@@ -557,39 +696,103 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 text: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.',
                 timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
             };
-            setMessages(prev => [...prev, errorMessage]);
+            
+            // 스트리밍 효과로 에러 메시지 표시
+            typeAIMessage(errorMessage);
+            
+            // 메시지 히스토리에 추가
+            setTimeout(() => {
+                setMessageHistory(prev => [...prev, [...messages, userMessage, errorMessage]]);
+            }, errorMessage.text.length * 20 + 100);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex bg-gray-100 rounded-2xl border border-gray-200 shadow-xl overflow-hidden w-full gap-3" style={{ height: 'calc(100% - 0px)', zoom: '0.95'}}>
+        <div ref={containerRef} className="flex bg-gray-100 rounded-2xl border border-gray-200 shadow-xl overflow-hidden w-full gap-0 relative" style={{ height: `${chatHeight}vh`, zoom: '0.95'}}>
             {/* Chat Area - Left */}
-            <div className="w-[35%] flex flex-col bg-white rounded-l-2xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col bg-white rounded-l-2xl border border-gray-200 shadow-sm relative" style={{ width: `${chatWidth}%` }}>
                 <div className="p-5 border-b border-gray-200 bg-white flex justify-between items-center h-[70px]">
                     <div className="flex items-center gap-2.5 font-bold text-[15px] text-gray-800">
                         <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm"><MessageSquare size={14} fill="white"/></div>
                         공고 생성 매니저
                     </div>
-                    <button 
-                        onClick={() => {
-                            if (currentJD.title || messages.length > 1) {
-                                const confirmed = window.confirm('작성 중인 내용이 있습니다. 새로 시작하시겠습니까?\n\n현재 내용은 자동으로 저장되어 다음에 다시 불러올 수 있습니다.');
-                                if (!confirmed) return;
-                            }
-                            // 새로운 채팅 시작 (localStorage는 유지)
-                            setCurrentJD(getDefaultJD('club'));
-                            setJdType('club');
-                            setMessages([getTypeSelectionMessage()]);
-                            localStorage.removeItem('currentJD');
-                            localStorage.removeItem('chatMessages');
-                        }}
-                        className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
-                        title="새로 시작"
-                    >
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* 채팅방 가로 크기 조절 버튼 */}
+                        <button 
+                            onClick={() => setChatWidth(prev => Math.max(25, prev - 5))}
+                            disabled={chatWidth <= 25}
+                            className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="채팅창 폭 축소"
+                        >
+                            <ChevronsLeft size={16} />
+                        </button>
+                        <span className="text-[10px] text-gray-400 font-medium min-w-[32px] text-center">{Math.round(chatWidth)}%</span>
+                        <button 
+                            onClick={() => setChatWidth(prev => Math.min(60, prev + 5))}
+                            disabled={chatWidth >= 60}
+                            className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="채팅창 폭 확대"
+                        >
+                            <ChevronsRight size={16} />
+                        </button>
+                        
+                        {/* 채팅방 세로 크기 조절 버튼 */}
+                        <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                        <button 
+                            onClick={() => setChatHeight(prev => Math.max(50, prev - 5))}
+                            disabled={chatHeight <= 50}
+                            className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="채팅창 높이 축소"
+                        >
+                            <ChevronsDown size={16} />
+                        </button>
+                        <span className="text-[10px] text-gray-400 font-medium min-w-[32px] text-center">{Math.round(chatHeight)}vh</span>
+                        <button 
+                            onClick={() => setChatHeight(prev => Math.min(95, prev + 5))}
+                            disabled={chatHeight >= 95}
+                            className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="채팅창 높이 확대"
+                        >
+                            <ChevronsUp size={16} />
+                        </button>
+                        
+                        <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                        {/* 되돌리기 버튼 */}
+                        <button 
+                            onClick={handleUndo}
+                            disabled={messageHistory.length <= 1 || isTypingAI}
+                            className="text-gray-400 cursor-pointer hover:text-blue-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="되돌리기"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 7v6h6"/>
+                                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                            </svg>
+                        </button>
+                        {/* 초기화 버튼 */}
+                        <button 
+                            onClick={() => {
+                                if (currentJD.title || messages.length > 1) {
+                                    const confirmed = window.confirm('작성 중인 내용이 있습니다. 새로 시작하시겠습니까?\n\n현재 내용은 자동으로 저장되어 다음에 다시 불러올 수 있습니다.');
+                                    if (!confirmed) return;
+                                }
+                                // 새로운 채팅 시작 (localStorage는 유지)
+                                setCurrentJD(getDefaultJD('club'));
+                                setJdType('club');
+                                const initialMessage = [getTypeSelectionMessage()];
+                                setMessages(initialMessage);
+                                setMessageHistory([initialMessage]);
+                                localStorage.removeItem('currentJD');
+                                localStorage.removeItem('chatMessages');
+                            }}
+                            className="text-gray-400 cursor-pointer hover:text-gray-600 transition-colors"
+                            title="새로 시작"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="flex-1 p-5 space-y-6 overflow-y-auto scrollbar-hide bg-[#F8FAFC]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -639,7 +842,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                         <button
                                             key={optIdx}
                                             onClick={() => handleSend(option)}
-                                            disabled={isLoading}
+                                            disabled={isLoading || isTypingAI}
                                             className="px-4 py-2.5 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-400 rounded-lg text-[13px] font-medium text-gray-700 hover:text-blue-600 transition-all text-left disabled:opacity-50"
                                         >
                                             {option}
@@ -647,7 +850,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                     ))}
                                     <button
                                         onClick={() => handleSend('이 질문은 건너뛰겠습니다')}
-                                        disabled={isLoading}
+                                        disabled={isLoading || isTypingAI}
                                         className="px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 rounded-lg text-[13px] font-medium text-gray-500 hover:text-gray-700 transition-all text-center disabled:opacity-50"
                                     >
                                         건너뛰기
@@ -656,11 +859,11 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                             )}
                             
                             {/* 일반 질문에도 건너뛰기 버튼 표시 (선택지가 없고, 마지막 메시지이고, AI 메시지인 경우) */}
-                            {msg.role === 'ai' && !msg.options && idx === messages.length - 1 && !isLoading && (
+                            {msg.role === 'ai' && !msg.options && idx === messages.length - 1 && !isLoading && !isTypingAI && (
                                 <div className="flex justify-start ml-11 mt-2">
                                     <button
                                         onClick={() => handleSend('이 질문은 건너뛰겠습니다')}
-                                        disabled={isLoading}
+                                        disabled={isLoading || isTypingAI}
                                         className="px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-700 transition-all disabled:opacity-50"
                                     >
                                         건너뛰기
@@ -674,6 +877,14 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-200">AI</div>
                             <div className="bg-white p-3.5 rounded-2xl rounded-tl-none text-[13px] text-gray-400 shadow-sm border border-gray-100">
                                 응답 생성 중...
+                            </div>
+                        </div>
+                    )}
+                    {isTypingAI && !isLoading && (
+                        <div className="flex gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-200">AI</div>
+                            <div className="bg-white p-3.5 rounded-2xl rounded-tl-none text-[13px] text-gray-400 shadow-sm border border-gray-100">
+                                <span className="animate-pulse">타이핑 중...</span>
                             </div>
                         </div>
                     )}
@@ -697,19 +908,80 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                     handleSend();
                                 }
                             }}
-                            disabled={isLoading}
+                            disabled={isLoading || isTypingAI}
                             rows={1}
-                            className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 focus:bg-white transition-all text-[13px] font-medium placeholder:text-gray-400 shadow-inner resize-none overflow-y-auto"
+                            className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-blue-500 focus:bg-white transition-all text-[13px] font-medium placeholder:text-gray-400 shadow-inner resize-none overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ minHeight: '52px', maxHeight: '150px' }}
                         />
                         <button 
                             onClick={() => handleSend()}
-                            disabled={isLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50"
+                            disabled={isLoading || isTypingAI}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ChevronRight size={18}/>
                         </button>
                     </div>
+                </div>
+                
+                {/* Corner Resize Handles */}
+                {/* Top-left corner */}
+                <div
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsCornerResizing(true);
+                    }}
+                    className="absolute top-0 left-0 w-6 h-6 cursor-nwse-resize group hover:bg-blue-50 rounded-br-lg transition-colors"
+                    style={{ zIndex: 50 }}
+                >
+                    <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-blue-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                
+                {/* Top-right corner */}
+                <div
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsCornerResizing(true);
+                    }}
+                    className="absolute top-0 right-0 w-6 h-6 cursor-nesw-resize group hover:bg-blue-50 rounded-bl-lg transition-colors"
+                    style={{ zIndex: 50 }}
+                >
+                    <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-blue-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                
+                {/* Bottom-left corner */}
+                <div
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsCornerResizing(true);
+                    }}
+                    className="absolute bottom-0 left-0 w-6 h-6 cursor-nesw-resize group hover:bg-blue-50 rounded-tr-lg transition-colors"
+                    style={{ zIndex: 50 }}
+                >
+                    <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-blue-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                
+                {/* Bottom-right corner */}
+                <div
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsCornerResizing(true);
+                    }}
+                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize group hover:bg-blue-50 rounded-tl-lg transition-colors"
+                    style={{ zIndex: 50 }}
+                >
+                    <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-blue-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+            </div>
+
+            {/* Resize Handle */}
+            <div 
+                ref={resizeRef}
+                onMouseDown={() => setIsResizing(true)}
+                className={`w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize transition-colors ${isResizing ? 'bg-blue-500' : ''}`}
+                style={{ flexShrink: 0 }}
+            >
+                <div className="h-full flex items-center justify-center">
+                    <div className="w-1 h-12 bg-gray-400 rounded-full opacity-0 hover:opacity-100 transition-opacity"></div>
                 </div>
             </div>
 

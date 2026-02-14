@@ -1,11 +1,11 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import os
-from typing import Optional
+from typing import Optional, Any
 
 # 지연 초기화를 위한 변수들
 _db: Optional[firestore.Client] = None
-_bucket: Optional[storage.Bucket] = None
+_bucket: Optional[Any] = None
 
 def _initialize_firebase():
     """Firebase Admin SDK 지연 초기화"""
@@ -47,7 +47,7 @@ def get_db() -> firestore.Client:
         _db = firestore.client()
     return _db
 
-def get_bucket() -> Optional[storage.Bucket]:
+def get_bucket() -> Optional[Any]:
     """지연 초기화된 Storage 버킷 반환"""
     global _bucket
     if _bucket is None and os.getenv("FIREBASE_STORAGE_BUCKET"):

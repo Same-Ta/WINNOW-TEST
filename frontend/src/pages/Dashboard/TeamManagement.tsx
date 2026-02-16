@@ -152,7 +152,7 @@ export const TeamManagement = (_props: TeamManagementProps) => {
     <div className="max-w-[900px] mx-auto" style={{ fontFamily: FONTS.sans }}>
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border transition-all ${
+        <div className={`fixed top-6 right-4 sm:right-6 left-4 sm:left-auto z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border transition-all max-w-sm sm:max-w-none sm:w-auto ${
           toast.type === 'success'
             ? 'bg-green-50 border-green-200 text-green-800'
             : 'bg-red-50 border-red-200 text-red-800'

@@ -215,22 +215,22 @@ export const AIEvaluationDemo = () => {
       >
         {/* ═══ 상단: 지원자 헤더 (스크린샷 2) ═══ */}
         <div
-          className={`flex items-center justify-between px-6 py-4 border-b border-gray-100 transition-all duration-500 ${
+          className={`flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 transition-all duration-500 gap-2 ${
             phase !== 'idle' ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <ArrowLeft size={18} className="text-gray-400" />
-            <div>
-              <h3 className="font-bold text-lg text-gray-900">{applicant.name}</h3>
-              <p className="text-sm text-gray-500">
-                {applicant.email} · {applicant.position}
+          <div className="flex items-center gap-3 min-w-0">
+            <ArrowLeft size={18} className="text-gray-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-bold text-base sm:text-lg text-gray-900 truncate">{applicant.name}</h3>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">
+                {applicant.email} · <span className="hidden sm:inline">{applicant.position}</span><span className="sm:hidden">WINNOW</span>
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
             <span
-              className={`px-5 py-2 rounded-lg text-sm font-semibold border transition-all duration-500 ${
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold border transition-all duration-500 ${
                 decided && applicant.decision !== '합격' && applicant.decision !== '불합격'
                   ? 'bg-gray-100 border-gray-300 text-gray-700'
                   : 'border-gray-200 text-gray-600'
@@ -239,7 +239,7 @@ export const AIEvaluationDemo = () => {
               검토중
             </span>
             <span
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-500 ${
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-500 ${
                 decided && applicant.decision === '합격'
                   ? 'bg-green-500 text-white shadow-lg shadow-green-200 scale-110'
                   : 'bg-green-500/20 text-green-700 border border-green-300'
@@ -248,7 +248,7 @@ export const AIEvaluationDemo = () => {
               합격
             </span>
             <span
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-500 ${
+              className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-500 ${
                 decided && applicant.decision === '불합격'
                   ? 'bg-red-500 text-white shadow-lg shadow-red-200 scale-110'
                   : 'border border-gray-200 text-gray-600'
@@ -261,13 +261,13 @@ export const AIEvaluationDemo = () => {
 
         {/* ═══ AI 분석 중 표시 ═══ */}
         {phase === 'ai-analyzing' && (
-          <div className="flex items-center justify-center gap-3 py-8">
-            <Sparkles size={20} className="text-blue-500 animate-pulse" />
-            <span className="text-base font-semibold text-blue-600 animate-pulse">AI가 지원자를 분석하고 있습니다...</span>
+          <div className="flex items-center justify-center gap-2 sm:gap-3 py-6 sm:py-8">
+            <Sparkles size={18} className="text-blue-500 animate-pulse" />
+            <span className="text-sm sm:text-base font-semibold text-blue-600 animate-pulse">AI가 지원자를 분석하고 있습니다...</span>
             <div className="flex gap-1">
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
@@ -280,7 +280,7 @@ export const AIEvaluationDemo = () => {
               : 'opacity-0 translate-y-4'
           }`}
         >
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <SkillBar
               label="역량 (Skill)"
               level={applicant.skillLevel}
@@ -308,30 +308,44 @@ export const AIEvaluationDemo = () => {
           </div>
 
           <div className="border border-gray-200 rounded-xl overflow-hidden">
-            {/* 테이블 헤더 */}
-            <div className="grid grid-cols-[100px_1fr_60px_1fr] gap-0 bg-gray-50 border-b border-gray-200 px-5 py-3 text-sm font-semibold text-gray-500">
+            {/* 테이블 헤더 (desktop) */}
+            <div className="hidden sm:grid grid-cols-[100px_1fr_60px_1fr] gap-0 bg-gray-50 border-b border-gray-200 px-5 py-3 text-sm font-semibold text-gray-500">
               <div>역량</div>
               <div>근거</div>
               <div className="text-center">수준</div>
               <div>판정</div>
             </div>
 
-            {/* 평가 행 */}
+            {/* 평가 행 (desktop: grid, mobile: card) */}
             {applicant.evaluations.map((ev, i) => (
               <div
                 key={i}
-                className={`grid grid-cols-[100px_1fr_60px_1fr] gap-0 px-5 py-4 border-b border-gray-100 last:border-b-0 items-start transition-all duration-500 ${
+                className={`border-b border-gray-100 last:border-b-0 transition-all duration-500 ${
                   i < visibleEvals ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
                 }`}
               >
-                <div className="font-bold text-sm text-gray-900">{ev.category}</div>
-                <div className="text-sm text-gray-500 leading-relaxed">{ev.basis}</div>
-                <div className="flex justify-center">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ev.color}`}>
-                    {ev.level}
-                  </span>
+                {/* Desktop row */}
+                <div className="hidden sm:grid grid-cols-[100px_1fr_60px_1fr] gap-0 px-5 py-4 items-start">
+                  <div className="font-bold text-sm text-gray-900">{ev.category}</div>
+                  <div className="text-sm text-gray-500 leading-relaxed">{ev.basis}</div>
+                  <div className="flex justify-center">
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ev.color}`}>
+                      {ev.level}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 leading-relaxed">{ev.verdict}</div>
                 </div>
-                <div className="text-sm text-gray-600 leading-relaxed">{ev.verdict}</div>
+                {/* Mobile card */}
+                <div className="sm:hidden px-4 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm text-gray-900">{ev.category}</span>
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${ev.color}`}>
+                      {ev.level}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-1">근거: {ev.basis}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{ev.verdict}</p>
+                </div>
               </div>
             ))}
           </div>

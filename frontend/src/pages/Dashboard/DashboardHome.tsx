@@ -227,10 +227,10 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
                 </div>
 
                 {/* 신규 지원자 진행률 차트 */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-800 mb-4">신규 지원자</h3>
-                    <div className="flex items-center justify-between">
-                        <div className="relative w-28 h-28">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
                             <svg className="w-full h-full transform -rotate-90">
                                 <circle cx="56" cy="56" r="48" fill="transparent" stroke="#E5E7EB" strokeWidth="10" />
                                 <circle 
@@ -273,10 +273,10 @@ export const DashboardHome = ({ onNavigate, onNavigateToJD }: DashboardHomeProps
                 </div>
 
                 {/* 서류 합격 진행률 차트 */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-800 mb-4">서류 합격</h3>
-                    <div className="flex items-center justify-between">
-                        <div className="relative w-28 h-28">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+                        <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
                             <svg className="w-full h-full transform -rotate-90">
                                 <circle cx="56" cy="56" r="48" fill="transparent" stroke="#E5E7EB" strokeWidth="10" />
                                 <circle 

@@ -726,7 +726,101 @@ export const ApplicantList = ({ onNavigateToApplicant }: { onNavigateToApplicant
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto">
+            {/* ===== Mobile Card Layout ===== */}
+            <div className="lg:hidden flex-1 overflow-auto p-3 sm:p-4">
+                {filteredApplications.length === 0 ? (
+                    <div className="py-20 text-center text-gray-400">
+                        {statusFilter.length > 0 || jdFilter.length > 0 || genderFilter.length > 0 || searchQuery || dateRange.start || dateRange.end
+                            ? '조건에 맞는 지원자가 없습니다.'
+                            : '아직 지원자가 없습니다.'
+                        }
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {filteredApplications.map((application) => (
+                            <div
+                                key={application.id}
+                                className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all cursor-pointer active:scale-[0.99]"
+                                onClick={() => handleApplicantClick(application)}
+                            >
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-bold text-[15px] text-gray-900 truncate">{application.applicantName}</span>
+                                            <span className={`flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                application.status === '합격'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : application.status === '불합격'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-gray-100 text-gray-600'
+                                            }`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                                    application.status === '합격' ? 'bg-green-500'
+                                                    : application.status === '불합격' ? 'bg-red-500'
+                                                    : 'bg-gray-400'
+                                                }`} />
+                                                {application.status || '검토중'}
+                                            </span>
+                                        </div>
+                                        <p className="text-[12px] text-gray-500 truncate">{application.jdTitle}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleApplicantClick(application);
+                                            }}
+                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="AI 분석"
+                                        >
+                                            <Sparkles size={16} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteApplicant(application.id, application.applicantName);
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                            title="삭제"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-gray-400">
+                                    <span>{application.applicantEmail}</span>
+                                    {application.applicantPhone && <span>{application.applicantPhone}</span>}
+                                    <span>{formatDate(application.appliedAt)}</span>
+                                </div>
+                                {/* Mobile status change buttons */}
+                                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                                    {['검토중', '합격', '불합격'].map(status => (
+                                        <button
+                                            key={status}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleStatusChange(application.id, status);
+                                            }}
+                                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                                                (application.status || '검토중') === status
+                                                    ? status === '합격' ? 'bg-green-500 text-white'
+                                                    : status === '불합격' ? 'bg-red-500 text-white'
+                                                    : 'bg-blue-500 text-white'
+                                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* ===== Desktop Table Layout ===== */}
+            <div className="hidden lg:block flex-1 overflow-auto">
                 <table className="w-full text-left text-sm text-gray-600" style={{fontSize: '0.85rem'}}>
                     <thead className="bg-[#F8FAFC] text-[10px] uppercase font-bold text-gray-400 tracking-wider sticky top-0">
                         <tr>

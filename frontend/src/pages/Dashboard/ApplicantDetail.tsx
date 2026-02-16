@@ -148,7 +148,7 @@ export const ApplicantDetail = ({ applicationId, onBack }: ApplicantDetailProps)
     const preferredTotal = application.preferredAnswers?.length || 0;
 
     return (
-        <div className="max-w-[1200px] mx-auto space-y-6" style={{ fontFamily: FONTS.sans }}>
+        <div className="max-w-[1200px] mx-auto space-y-4 sm:space-y-6 px-1 sm:px-0" style={{ fontFamily: FONTS.sans }}>
             {/* 상단 헤더 */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <button
@@ -158,8 +158,8 @@ export const ApplicantDetail = ({ applicationId, onBack }: ApplicantDetailProps)
                     <ArrowLeft size={20} className="text-gray-600" />
                 </button>
                 <div className="flex-1 min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{application.applicantName}</h2>
-                    <p className="text-sm text-gray-500 truncate">{application.applicantEmail} · {application.jdTitle}</p>
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">{application.applicantName}</h2>
+                    <p className="text-xs sm:text-sm text-gray-500 truncate">{application.applicantEmail} · {application.jdTitle}</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 flex-wrap">
                     {['검토중', '합격', '불합격'].map(status => (
@@ -186,11 +186,11 @@ export const ApplicantDetail = ({ applicationId, onBack }: ApplicantDetailProps)
                 {/* 지원서 내용 */}
                 <div className="space-y-6">
                     {/* 지원자 기본 정보 */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
                         <h3 className="font-bold text-gray-900 mb-4">
                             지원자 정보
                         </h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <p className="text-xs text-gray-400 mb-1">이름</p>
                                 <p className="text-sm font-medium text-gray-900">{application.applicantName}</p>

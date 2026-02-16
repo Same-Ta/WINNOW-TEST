@@ -112,7 +112,7 @@ export const ChatDemo = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [jd, setJd] = useState<DemoJD>({ ...INITIAL_JD });
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [height, setHeight] = useState(580);
+  const [height, setHeight] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? 480 : 580);
   const [isResizing, setIsResizing] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -237,11 +237,11 @@ export const ChatDemo = () => {
     <div className="relative w-full select-none">
       <div
         ref={containerRef}
-        className="flex bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-3xl border border-gray-200/80 shadow-2xl overflow-hidden w-full gap-4"
+        className="flex bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-3xl border border-gray-200/80 shadow-2xl overflow-hidden w-full gap-0 md:gap-4"
         style={{ height: `${height}px` }}
       >
-      {/* ========== Chat Area – Left 40% ========== */}
-      <div className="w-[40%] flex flex-col bg-white rounded-l-3xl shadow-sm">
+      {/* ========== Chat Area – Left (full on mobile, 40% on desktop) ========== */}
+      <div className="w-full md:w-[40%] flex flex-col bg-white rounded-3xl md:rounded-l-3xl md:rounded-r-none shadow-sm">
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50/50 flex justify-between items-center h-[72px] flex-shrink-0">
           <div className="flex items-center gap-3 font-bold text-[15.5px] text-gray-900">
@@ -266,7 +266,7 @@ export const ChatDemo = () => {
                     AI
                   </div>
                 )}
-                <div className={`space-y-1 max-w-[270px] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
+                <div className={`space-y-1 max-w-[85%] md:max-w-[270px] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
                   <div
                     className={`px-4 py-3 rounded-2xl text-[13.5px] shadow-md border leading-relaxed ${
                       msg.role === 'ai'
@@ -338,8 +338,8 @@ export const ChatDemo = () => {
         </div>
       </div>
 
-      {/* ========== Preview Area – Right 60% ========== */}
-      <div className="flex-1 bg-white flex relative overflow-hidden rounded-r-3xl shadow-sm">
+      {/* ========== Preview Area – Right 60% (hidden on mobile) ========== */}
+      <div className="hidden md:flex flex-1 bg-white relative overflow-hidden rounded-r-3xl shadow-sm">
 
         {/* ── Left Profile Sidebar ── */}
         <div className="w-[210px] border-r border-gray-100 flex flex-col bg-gradient-to-b from-[#FAFBFC] to-[#F8FAFC] overflow-y-auto flex-shrink-0 scrollbar-hide">
@@ -538,9 +538,9 @@ export const ChatDemo = () => {
       `}</style>
       </div>
 
-      {/* 높이 조절 핸들 */}
+      {/* 높이 조절 핸들 (desktop only) */}
       <div
-        className={`absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center group ${
+        className={`hidden md:flex absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize items-center justify-center group ${
           isResizing ? 'bg-blue-200/50' : 'hover:bg-blue-100/30'
         } transition-colors`}
         onMouseDown={handleMouseDown}

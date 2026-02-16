@@ -715,7 +715,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
     };
 
     return (
-        <div className="relative w-full" style={{ zoom: isMobile ? '1' : '0.95'}}>
+        <div className="relative w-full" style={isMobile ? {} : { transform: 'scale(0.95)', transformOrigin: 'top center', width: '105.26%', marginLeft: '-2.63%' }}>
         {/* 모바일 탭 전환 */}
         {isMobile && (
             <div className="flex mb-2 bg-gray-100 rounded-xl p-1 gap-1">
@@ -1034,7 +1034,7 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                 {/* Right Content Section */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     
-                    <div className="flex-1 overflow-y-auto space-y-8" style={{ padding: chatWidth > 40 ? '32px' : '16px', paddingTop: chatWidth > 40 ? '32px' : '16px' }}>
+                    <div className="flex-1 overflow-y-auto space-y-8" style={{ padding: isMobile ? '16px' : (chatWidth > 40 ? '32px' : '16px'), paddingTop: isMobile ? '16px' : (chatWidth > 40 ? '32px' : '16px') }}>
                         {!currentJD.title && currentJD.responsibilities.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-center">
                                 <div className="bg-gray-50 rounded-full flex items-center justify-center mb-4" style={{ width: chatWidth > 40 ? '64px' : '48px', height: chatWidth > 40 ? '64px' : '48px' }}>
@@ -1511,19 +1511,19 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                         <p className="text-[12px] text-gray-600 mb-3">
                                             지원자가 최소한 몇 개의 자격요건을 충족해야 하는지 설정하세요.
                                         </p>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[13px] font-semibold text-gray-700">총 {currentJD.requirements.length}개 중</span>
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                            <span className="text-[13px] font-semibold text-gray-700 shrink-0">총 {currentJD.requirements.length}개 중</span>
                                             <select
                                                 value={requiredCheckCount}
                                                 onChange={(e) => setRequiredCheckCount(Number(e.target.value))}
-                                                className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-[13px] font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                                className="flex-1 min-w-[140px] px-3 py-2 border border-blue-300 rounded-lg text-[13px] font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                                             >
                                                 <option value={0}>체크 필수 없음</option>
                                                 {Array.from({ length: currentJD.requirements.length }, (_, i) => i + 1).map(num => (
                                                     <option key={num} value={num}>최소 {num}개 필수</option>
                                                 ))}
                                             </select>
-                                            <span className="text-[13px] text-gray-600">체크 필요</span>
+                                            <span className="text-[13px] text-gray-600 shrink-0">체크 필요</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1537,19 +1537,19 @@ export const ChatInterface = ({ onNavigate }: ChatInterfaceProps) => {
                                         <p className="text-[12px] text-gray-600 mb-3">
                                             지원자가 최소한 몇 개의 우대사항을 충족해야 하는지 설정하세요.
                                         </p>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[13px] font-semibold text-gray-700">총 {currentJD.preferred.length}개 중</span>
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                            <span className="text-[13px] font-semibold text-gray-700 shrink-0">총 {currentJD.preferred.length}개 중</span>
                                             <select
                                                 value={preferredCheckCount}
                                                 onChange={(e) => setPreferredCheckCount(Number(e.target.value))}
-                                                className="flex-1 px-3 py-2 border border-purple-300 rounded-lg text-[13px] font-semibold focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                                                className="flex-1 min-w-[140px] px-3 py-2 border border-purple-300 rounded-lg text-[13px] font-semibold focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                                             >
                                                 <option value={0}>체크 필수 없음</option>
                                                 {Array.from({ length: currentJD.preferred.length }, (_, i) => i + 1).map(num => (
                                                     <option key={num} value={num}>최소 {num}개 필수</option>
                                                 ))}
                                             </select>
-                                            <span className="text-[13px] text-gray-600">체크 필요</span>
+                                            <span className="text-[13px] text-gray-600 shrink-0">체크 필요</span>
                                         </div>
                                     </div>
                                 </div>

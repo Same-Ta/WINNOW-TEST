@@ -18,16 +18,16 @@ export const ApplicantAnalytics = () => {
     }
 
     return (
-    <div className="space-y-8 max-w-[1200px] mx-auto pb-10">
+    <div className="space-y-6 sm:space-y-8 max-w-[1200px] mx-auto pb-10 px-1 sm:px-0">
         <div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">지원자 현황</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">지원자 현황</h2>
             <p className="text-gray-500 text-sm mt-1">AI가 스크리닝한 인재 목록을 확인하세요. (총 {stats.total}명)</p>
         </div>
 
         {/* Analytics Top */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Graph Card */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
+            <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-center mb-8">
                     <h3 className="font-bold text-lg text-gray-800">총 지원자 추이</h3>
                     <div className="text-[12px] font-bold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-gray-100">
@@ -63,7 +63,7 @@ export const ApplicantAnalytics = () => {
             </div>
 
             {/* Donut Charts */}
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-around">
+            <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-center justify-around gap-8 sm:gap-4">
                 {/* Gender Chart */}
                 <div className="text-center">
                     <div className="text-[13px] font-bold mb-6 text-gray-600">성비</div>
@@ -119,7 +119,7 @@ export const ApplicantAnalytics = () => {
         {/* Status Cards - Colored */}
         <div>
              <h3 className="font-bold text-lg text-gray-800 mb-5">채용 진행 현황</h3>
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+             <div className="grid grid-cols-3 gap-3 sm:gap-5">
                  {[
                      { label: '합격', count: stats.passed, bg: 'bg-[#4ADE80]', text: 'text-white' },
                      { label: '불합격', count: stats.rejected, bg: 'bg-[#FCA5A5]', text: 'text-white' },

@@ -74,7 +74,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
         {/* Background Glow */}
         <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-100/40 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
 
-        <h1 className="text-4xl md:text-[56px] font-bold leading-[1.2] mb-8 tracking-tight text-slate-900">
+        <h1 className="text-3xl sm:text-4xl md:text-[56px] font-bold leading-[1.2] mb-6 sm:mb-8 tracking-tight text-slate-900">
           채용의 <span className="relative inline-block text-gray-300">
             <span className="relative z-10 line-through decoration-gray-400/80 decoration-2">거품</span>
             <span className="absolute inset-0 bg-gray-100 blur-sm rounded-full -z-0 opacity-50"></span>
@@ -101,7 +101,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">
             3단계로 완성하는 <span className="text-blue-600">스마트 채용</span>
           </h2>
-          <p className="text-gray-500 text-lg mb-16">
+          <p className="text-gray-500 text-base sm:text-lg mb-10 sm:mb-16">
             지원자 관리부터 AI 면접, 분석까지 한 곳에서
           </p>
 
@@ -316,8 +316,15 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
               공고를 게시하고 링크를 공유하면, 지원자가 체크리스트를 작성하고 대시보드에서 바로 확인됩니다.
             </p>
           </div>
-          <div className="overflow-x-auto" style={{ transform: 'scale(0.65)', transformOrigin: 'top center' }}>
-            <ApplicationFlowDemo />
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="min-w-[700px] md:min-w-0">
+              <div className="hidden md:block" style={{ transform: 'scale(0.7)', transformOrigin: 'top center', height: '400px' }}>
+                <ApplicationFlowDemo />
+              </div>
+              <div className="md:hidden" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', height: '310px' }}>
+                <ApplicationFlowDemo />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -337,8 +344,15 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
               지원자별 역량과 의지를 AI가 자동으로 평가합니다. 한눈에 비교하고 간편하게 합격/불합격을 관리하세요.
             </p>
           </div>
-          <div className="overflow-x-auto" style={{ transform: 'scale(0.65)', transformOrigin: 'top center' }}>
-            <AIEvaluationDemo />
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="min-w-[700px] md:min-w-0">
+              <div className="hidden md:block" style={{ transform: 'scale(0.7)', transformOrigin: 'top center', height: '420px' }}>
+                <AIEvaluationDemo />
+              </div>
+              <div className="md:hidden" style={{ transform: 'scale(0.55)', transformOrigin: 'top left', height: '340px' }}>
+                <AIEvaluationDemo />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -348,7 +362,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent opacity-50"></div>
         
         <div className="max-w-[1100px] mx-auto relative z-10">
-          <h2 className="text-[32px] md:text-[40px] font-bold mb-20 leading-tight">
+          <h2 className="text-[26px] sm:text-[32px] md:text-[40px] font-bold mb-10 sm:mb-20 leading-tight">
             평가에 필요한 모든 도구를<br />
             <span className="text-blue-500">활용해보세요</span>
           </h2>
@@ -359,7 +373,7 @@ export const LandingPage = ({ onLogin }: LandingPageProps) => {
                 { title: '간편한 평가 프로세스', desc: 'JD 생성부터 결과 분석까지, 채용의 전 과정을 원스톱으로 관리하세요.', tags: ['JD 생성', '자동화', '대시보드'] },
                 { title: '다양한 분야 커버', desc: '개발, 디자인, 마케팅 등 기업에 필요한 모든 직군의 역량을 평가할 수 있습니다.', tags: ['전 직군', '맞춤형', '유연성'] }
             ].map((card, idx) => (
-                <div key={idx} className="group bg-[#0F172A]/60 border border-slate-800 p-8 rounded-3xl backdrop-blur-sm hover:border-blue-500/50 hover:bg-[#0F172A] transition-all duration-300">
+                <div key={idx} className="group relative bg-[#0F172A]/60 border border-slate-800 p-6 sm:p-8 rounded-3xl backdrop-blur-sm hover:border-blue-500/50 hover:bg-[#0F172A] transition-all duration-300">
                     <h3 className="text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors">{card.title}</h3>
                     <p className="text-slate-400 text-sm leading-relaxed mb-8 h-12">{card.desc}</p>
                     <div className="flex flex-wrap gap-2">

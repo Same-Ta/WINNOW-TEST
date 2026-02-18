@@ -95,7 +95,7 @@ export const maskName = (name: string): string => {
  * API 요청 시 민감 정보 로깅 방지
  */
 export const safeLog = (label: string, data: any): void => {
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
         // 프로덕션에서는 민감 정보 제외하고 로깅
         console.log(label, '[DATA REDACTED IN PRODUCTION]');
     } else {

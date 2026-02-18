@@ -121,7 +121,7 @@ class UserAnalytics {
   }
 
   // 이벤트 전송 (배치 처리)
-  private sendEvent(event: any) {
+  private sendEvent(_event: any) {
     // 즉시 전송하지 않고 배치로 처리
     this.sendBatch();
   }

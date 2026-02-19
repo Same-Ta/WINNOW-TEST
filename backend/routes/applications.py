@@ -17,7 +17,7 @@ from models.schemas import ApplicationCreate, ApplicationUpdate, ApplicationResp
 router = APIRouter(prefix="/api/applications", tags=["Applications"])
 
 
-def _send_email_smtp(to_email: str, subject: str, html_body: str):
+def _send_email_smtp(to_email: str, subject: str, html_body: str, reply_to: str = None):
     """SMTP를 사용하여 이메일을 전송합니다."""
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -32,6 +32,8 @@ def _send_email_smtp(to_email: str, subject: str, html_body: str):
     msg["Subject"] = subject
     msg["From"] = smtp_from
     msg["To"] = to_email
+    if reply_to:
+        msg["Reply-To"] = reply_to
 
     html_part = MIMEText(html_body, "html", "utf-8")
     msg.attach(html_part)
@@ -139,7 +141,8 @@ async def send_email_notifications(request: EmailNotificationRequest, user_data:
 
                 # HTML 이메일 생성 및 전송
                 html_body = _build_email_html(name, request.message, request.notificationType)
-                _send_email_smtp(email, request.subject, html_body)
+                recruiter_email = user_data.get('email')
+                _send_email_smtp(email, request.subject, html_body, reply_to=recruiter_email)
 
                 # 전송 기록 저장
                 new_status = "합격" if request.notificationType == "accepted" else "불합격"
